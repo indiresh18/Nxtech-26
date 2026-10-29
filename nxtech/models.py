@@ -131,6 +131,10 @@ class NxTechSettings(models.Model):
         default=120,
         verbose_name="Max Hackathon Teams Limit"
     )
+    max_teams_per_problem_statement = models.PositiveIntegerField(
+        default=15,
+        verbose_name="Max Teams Per Problem Statement"
+    )
     max_fa_teams = models.PositiveIntegerField(
         default=120,
         verbose_name="Max Failure Analysis Teams Limit"
@@ -157,3 +161,4 @@ class NxTechSettings(models.Model):
 
     def __str__(self):
         return f"NxTech Master Controls [Hackathon: {'OPEN' if self.hackathon_registration_open else 'CLOSED'}, FA: {'OPEN' if self.failure_analysis_registration_open else 'CLOSED'}]"
+

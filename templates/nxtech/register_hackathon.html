@@ -246,10 +246,12 @@
             <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-200 shadow-sm space-y-6">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <span>4.</span> Problem Statement Selection <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full">NT01 – NT30</span>
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                            <span>4.</span> Problem Statement Selection 
+                            <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full">NT01 – NT30</span>
+                            <span class="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200">Max 15 Teams / Statement</span>
                         </h2>
-                        <p class="text-xs text-gray-500 mt-1">Select your team's Problem Statement from the official 30 curated challenges.</p>
+                        <p class="text-xs text-gray-500 mt-1">Select your team's Problem Statement. Each challenge has a strict limitation of 15 teams maximum.</p>
                     </div>
                     <a href="{% url 'download_hackathon_problem_statements' %}" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-3.5 py-2 rounded-xl border border-purple-200 transition">
                         <span>📥</span> Download Full PDF
@@ -263,16 +265,18 @@
                     <select id="problem_statement" name="problem_statement" required onchange="updateStatementPreview()"
                         class="w-full text-sm md:text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
                         <option value="">-- Choose Problem Statement (NT01 – NT30) --</option>
-                        {% for code, label in problem_statements %}
-                        <option value="{{ label }}" data-code="{{ code }}">{{ label }}</option>
+                        {% for ps in problem_statements %}
+                        <option value="{{ ps.label }}" data-code="{{ ps.code }}" {% if ps.is_full %}disabled class="bg-gray-100 text-gray-400 font-normal"{% endif %}>
+                            {{ ps.label }} {% if ps.is_full %}— [🔒 FULL: {{ ps.count }}/{{ ps.limit }} Teams]{% else %}— ({{ ps.count }}/{{ ps.limit }} Teams • {{ ps.remaining }} slot{{ ps.remaining|pluralize }} left){% endif %}
+                        </option>
                         {% endfor %}
                     </select>
 
                     <!-- DYNAMIC STATEMENT PREVIEW CARD -->
                     <div id="ps-preview-box" style="display: none;" class="mt-4 p-5 rounded-2xl bg-purple-50/80 border border-purple-200 text-sm space-y-2">
-                        <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
                             <span id="ps-preview-code" class="px-2.5 py-0.5 rounded-md bg-[#7C1A7E] text-white font-mono font-bold text-xs"></span>
-                            <span id="ps-preview-badges" class="flex gap-2"></span>
+                            <span id="ps-preview-badges" class="flex gap-2 flex-wrap"></span>
                         </div>
                         <h4 id="ps-preview-title" class="text-base font-bold text-gray-900"></h4>
                         <p id="ps-preview-desc" class="text-gray-700 text-xs md:text-sm leading-relaxed"></p>
@@ -317,12 +321,21 @@
             document.getElementById('ps-preview-desc').textContent = item.description;
 
             const badgesContainer = document.getElementById('ps-preview-badges');
+            let capacityBadge = '';
+            if (item.is_full) {
+                capacityBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 border border-red-300">🔒 FULL (${item.count}/${item.limit} Teams Limit Reached)</span>`;
+            } else {
+                capacityBadge = `<span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">✓ ${item.count}/${item.limit} Teams (${item.remaining} slot${item.remaining === 1 ? '' : 's'} left)</span>`;
+            }
+
             badgesContainer.innerHTML = `
                 <span class="px-2 py-0.5 rounded text-xs font-semibold ${item.type === 'Hardware' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800 border border-blue-300'}">${item.type}</span>
-                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">${item.stream}</span>
+                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-300">${item.stream}</span>
+                ${capacityBadge}
             `;
             previewBox.style.display = 'block';
         }
     </script>
 </body>
 </html>
+

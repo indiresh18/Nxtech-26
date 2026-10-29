@@ -12,3 +12,4 @@ urlpatterns = [
     path('confirmation/<str:event_type>/<int:team_id>/', views.registration_confirmation, name='nxtech_confirmation'),
     path('hackathon/download-problem-statements/', views.download_hackathon_problem_statements, name='download_hackathon_problem_statements'),
 ]
+

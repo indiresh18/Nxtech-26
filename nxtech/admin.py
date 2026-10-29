@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -18,6 +19,15 @@ from .models import (
     FailureAnalysisTeam, FailureAnalysisMember,
     NxTechSettings
 )
+
+
+def extract_problem_statement_id(statement_str):
+    if not statement_str:
+        return ""
+    match = re.search(r'\b(NT\d{1,2})\b', str(statement_str), re.IGNORECASE)
+    if match:
+        return match.group(1).upper()
+    return str(statement_str).strip()
 
 
 def generate_csv_response(filename, headers, rows):
@@ -99,6 +109,64 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
+class ProblemStatementFilter(admin.SimpleListFilter):
+    title = 'Problem Statement'
+    parameter_name = 'problem_statement_code'
+
+    def lookups(self, request, model_admin):
+        from .problem_statements import HACKATHON_PROBLEM_STATEMENTS
+        return [(item['ps_id'], f"[{item['ps_id']}] {item['title'][:40]}") for item in HACKATHON_PROBLEM_STATEMENTS]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(problem_statement__icontains=self.value())
+        return queryset
+
+
+def build_hackathon_teams_export(queryset):
+    headers = [
+        "S.No",
+        "Team ID",
+        "Team Name",
+        "Leader Roll",
+        "Problem Statement ID",
+        "Problem Statement",
+        "Problem Statement Description",
+        "Leader Name",
+        "Leader Dept",
+        "Leader Contact",
+        "Leader Email",
+        "Members Count",
+        "Team Members Roster",
+        "Registered At"
+    ]
+    rows = []
+    for idx, t in enumerate(queryset.prefetch_related('members'), start=1):
+        ps = t.problem_statement or ""
+        ps_id = extract_problem_statement_id(ps)
+        members_list = ", ".join([
+            f"{m.name} ({m.roll} - {m.dept})" + (" [Lead]" if m.is_leader else "")
+            for m in t.members.all()
+        ])
+        rows.append([
+            idx,
+            t.id,
+            t.export_team_name,
+            t.leader_roll,
+            ps_id,
+            ps,
+            t.problem_statement_detail or ps,
+            t.leader_name,
+            t.leader_dept,
+            t.leader_contact or "",
+            t.leader_email or "",
+            t.members.count(),
+            members_list,
+            t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else ""
+        ])
+    return headers, rows
+
+
 class HackathonMemberInline(admin.TabularInline):
     model = HackathonMember
     extra = 0
@@ -109,12 +177,13 @@ class HackathonMemberInline(admin.TabularInline):
 
 @admin.register(HackathonTeam)
 class HackathonTeamAdmin(admin.ModelAdmin):
+    change_list_template = "admin/nxtech/hackathonteam/change_list.html"
     list_display = (
-        'display_team_name', 'leader_name', 'leader_roll', 'leader_dept',
-        'leader_contact', 'problem_statement_short', 'team_size', 'created_at'
+        'display_team_name', 'display_problem_statement', 'leader_name', 'leader_roll',
+        'leader_dept', 'leader_contact', 'team_size', 'created_at'
     )
     search_fields = ('team_name', 'leader_name', 'leader_roll', 'leader_dept', 'problem_statement')
-    list_filter = ('leader_dept', 'created_at')
+    list_filter = (ProblemStatementFilter, 'leader_dept', 'created_at')
     inlines = [HackathonMemberInline]
     actions = ['export_teams_csv', 'export_teams_excel']
 
@@ -124,32 +193,52 @@ class HackathonTeamAdmin(admin.ModelAdmin):
         )
     display_team_name.short_description = "Team Name (Leader Roll)"
 
-    def problem_statement_short(self, obj):
-        ps = obj.problem_statement or ""
-        return ps[:40] + "..." if len(ps) > 40 else ps
-    problem_statement_short.short_description = "Problem Statement"
+    def display_problem_statement(self, obj):
+        ps = obj.problem_statement or "-"
+        ps_id = extract_problem_statement_id(ps)
+        if ps_id:
+            return format_html(
+                '<span style="padding: 2px 7px; background: #7C1A7E; color: white; border-radius: 5px; font-weight: bold; font-size: 11px; margin-right: 5px;">{}</span>'
+                '<span style="font-size: 12px; color: #1E293B; font-weight: 500;">{}</span>',
+                ps_id,
+                ps[:55] + ("..." if len(ps) > 55 else "")
+            )
+        return ps
+    display_problem_statement.short_description = "Problem Statement"
 
     def team_size(self, obj):
         count = obj.members.count()
         return format_html(f"<strong>{count}</strong> members")
     team_size.short_description = "Squad Size"
 
-    @admin.action(description="⬇ Export Selected Teams to CSV")
-    def export_teams_csv(self, request, queryset):
-        headers = ["Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept", "Leader Contact", "Leader Email", "Problem Track", "Members Count", "Registered At"]
-        rows = [
-            [t.id, t.export_team_name, t.leader_name, t.leader_roll, t.leader_dept, t.leader_contact or "", t.leader_email or "", t.problem_statement, t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")]
-            for t in queryset
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('download/all-teams-excel/', self.admin_site.admin_view(self.view_download_all_teams_excel), name='hackathon_all_teams_excel'),
+            path('download/all-teams-csv/', self.admin_site.admin_view(self.view_download_all_teams_csv), name='hackathon_all_teams_csv'),
         ]
+        return custom_urls + urls
+
+    def view_download_all_teams_excel(self, request):
+        queryset = HackathonTeam.objects.all().order_by('-created_at')
+        headers, rows = build_hackathon_teams_export(queryset)
+        filename = f"NxTech26_Hackathon_Teams_With_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        return generate_excel_response(filename, "Hackathon Teams", headers, rows)
+
+    def view_download_all_teams_csv(self, request):
+        queryset = HackathonTeam.objects.all().order_by('-created_at')
+        headers, rows = build_hackathon_teams_export(queryset)
+        filename = f"NxTech26_Hackathon_Teams_With_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
+        return generate_csv_response(filename, headers, rows)
+
+    @admin.action(description="⬇ Export Selected Teams with Problem Statements to CSV")
+    def export_teams_csv(self, request, queryset):
+        headers, rows = build_hackathon_teams_export(queryset)
         return generate_csv_response(f"nxtech_hackathon_teams_{timezone.now().strftime('%Y%m%d_%H%M')}.csv", headers, rows)
 
-    @admin.action(description="⬇ Export Selected Teams to Excel (.xlsx)")
+    @admin.action(description="⬇ Export Selected Teams with Problem Statements to Excel (.xlsx)")
     def export_teams_excel(self, request, queryset):
-        headers = ["Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept", "Leader Contact", "Leader Email", "Problem Track", "Members Count", "Registered At"]
-        rows = [
-            [t.id, t.export_team_name, t.leader_name, t.leader_roll, t.leader_dept, t.leader_contact or "", t.leader_email or "", t.problem_statement, t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")]
-            for t in queryset
-        ]
+        headers, rows = build_hackathon_teams_export(queryset)
         return generate_excel_response(f"nxtech_hackathon_teams_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx", "Hackathon Teams", headers, rows)
 
 
@@ -176,7 +265,7 @@ class HackathonMemberAdmin(admin.ModelAdmin):
     def problem_track(self, obj):
         track = obj.team.problem_statement or ""
         return track[:35] + "..." if len(track) > 35 else track
-    problem_track.short_description = "Track"
+    problem_track.short_description = "Problem Statement"
 
     def leader_contact_info(self, obj):
         return obj.team.leader_contact or "-"
@@ -184,18 +273,18 @@ class HackathonMemberAdmin(admin.ModelAdmin):
 
     @admin.action(description="⬇ Export Selected Students to CSV")
     def export_students_csv(self, request, queryset):
-        headers = ["S.No", "Student Name", "Roll Number", "Department", "Role", "Team Name", "Problem Track", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
+        headers = ["S.No", "Student Name", "Roll Number", "Department", "Role", "Team Name", "Problem Statement ID", "Problem Statement", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
         rows = [
-            [idx, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.export_team_name, m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
+            [idx, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.export_team_name, extract_problem_statement_id(m.team.problem_statement), m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
             for idx, m in enumerate(queryset, start=1)
         ]
         return generate_csv_response(f"nxtech_hackathon_students_{timezone.now().strftime('%Y%m%d_%H%M')}.csv", headers, rows)
 
     @admin.action(description="⬇ Export Selected Students to Excel (.xlsx)")
     def export_students_excel(self, request, queryset):
-        headers = ["S.No", "Student Name", "Roll Number", "Department", "Role", "Team Name", "Problem Track", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
+        headers = ["S.No", "Student Name", "Roll Number", "Department", "Role", "Team Name", "Problem Statement ID", "Problem Statement", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
         rows = [
-            [idx, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.export_team_name, m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
+            [idx, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.export_team_name, extract_problem_statement_id(m.team.problem_statement), m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
             for idx, m in enumerate(queryset, start=1)
         ]
         return generate_excel_response(f"nxtech_hackathon_students_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx", "Hackathon Students", headers, rows)
@@ -305,9 +394,10 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
             "fields": (
                 "hackathon_registration_open",
                 "max_hackathon_teams",
+                "max_teams_per_problem_statement",
                 "hackathon_closed_message"
             ),
-            "description": "Control whether Hackathon registrations are open. Auto-locks once reaching 120 teams."
+            "description": "Control whether Hackathon registrations are open. Auto-locks once reaching 120 teams. Problem statements lock individually once reaching 15 teams."
         }),
         ("Failure Analysis Registration Status & Limit", {
             "fields": (
@@ -363,14 +453,18 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
 
     def download_hub_actions(self, obj):
         return format_html(
-            '<div style="display: flex; flex-direction: column; gap: 4px;">'
+            '<div style="display: flex; flex-direction: column; gap: 6px;">'
             '  <div>'
-            '    <a href="/admin/nxtech/nxtechsettings/download/all-students-excel/" style="padding: 3px 8px; background: #16A34A; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold;">📊 All Students (Excel)</a> '
-            '    <a href="/admin/nxtech/nxtechsettings/download/all-students-csv/" style="padding: 3px 8px; background: #0284C7; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 All Students (CSV)</a>'
+            '    <a href="/admin/nxtech/hackathonteam/download/all-teams-excel/" style="padding: 4px 10px; background: #7C1A7E; color: white; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: bold; margin-right: 5px;">🚀 Hackathon Teams & Problem Statements (.xlsx)</a>'
+            '    <a href="/admin/nxtech/hackathonteam/download/all-teams-csv/" style="padding: 4px 10px; background: #581C87; color: white; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 Teams (.csv)</a>'
             '  </div>'
             '  <div>'
-            '    <a href="/admin/nxtech/nxtechsettings/download/hackathon-excel/" style="padding: 2px 6px; background: #7C1A7E; color: white; border-radius: 4px; font-size: 10px; text-decoration: none;">Hackathon (.xlsx)</a> '
-            '    <a href="/admin/nxtech/nxtechsettings/download/fa-excel/" style="padding: 2px 6px; background: #334155; color: white; border-radius: 4px; font-size: 10px; text-decoration: none;">Failure Analysis (.xlsx)</a>'
+            '    <a href="/admin/nxtech/nxtechsettings/download/all-students-excel/" style="padding: 3px 8px; background: #16A34A; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold; margin-right: 5px;">📊 All Students (Excel)</a> '
+            '    <a href="/admin/nxtech/nxtechsettings/download/all-students-csv/" style="padding: 3px 8px; background: #0284C7; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 All Students (CSV)</a>'
+            '  </div>'
+            '  <div style="font-size: 10px; color: #64748B;">'
+            '    <a href="/admin/nxtech/nxtechsettings/download/hackathon-excel/" style="padding: 2px 6px; background: #6B21A8; color: white; border-radius: 4px; text-decoration: none; margin-right: 4px;">Hackathon Students (.xlsx)</a> '
+            '    <a href="/admin/nxtech/nxtechsettings/download/fa-excel/" style="padding: 2px 6px; background: #334155; color: white; border-radius: 4px; text-decoration: none;">Failure Analysis Students (.xlsx)</a>'
             '  </div>'
             '</div>'
         )
@@ -423,6 +517,8 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
+            path('download/hackathon-teams-excel/', self.admin_site.admin_view(self.view_download_hackathon_teams_excel), name='nxtech_download_hackathon_teams_excel'),
+            path('download/hackathon-teams-csv/', self.admin_site.admin_view(self.view_download_hackathon_teams_csv), name='nxtech_download_hackathon_teams_csv'),
             path('download/all-students-excel/', self.admin_site.admin_view(self.view_download_all_students_excel), name='nxtech_download_all_excel'),
             path('download/all-students-csv/', self.admin_site.admin_view(self.view_download_all_students_csv), name='nxtech_download_all_csv'),
             path('download/hackathon-excel/', self.admin_site.admin_view(self.view_download_hackathon_excel), name='nxtech_download_hackathon_excel'),
@@ -432,10 +528,22 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
+    def view_download_hackathon_teams_excel(self, request):
+        queryset = HackathonTeam.objects.all().order_by('-created_at')
+        headers, rows = build_hackathon_teams_export(queryset)
+        filename = f"NxTech26_Hackathon_Teams_With_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        return generate_excel_response(filename, "Hackathon Teams", headers, rows)
+
+    def view_download_hackathon_teams_csv(self, request):
+        queryset = HackathonTeam.objects.all().order_by('-created_at')
+        headers, rows = build_hackathon_teams_export(queryset)
+        filename = f"NxTech26_Hackathon_Teams_With_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
+        return generate_csv_response(filename, headers, rows)
+
     def _get_all_students_data(self):
         headers = [
             "S.No", "Competition Event", "Team Name", "Student Name", "Roll Number",
-            "Department", "Role", "Track / Topic", "Team Leader Name",
+            "Department", "Role", "Problem Statement ID", "Problem Statement", "Team Leader Name",
             "Leader Contact", "Leader Email", "Registered Date"
         ]
         rows = []
@@ -443,6 +551,8 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
 
         hack_members = HackathonMember.objects.select_related('team').order_by('team__team_name', '-is_leader')
         for m in hack_members:
+            ps = m.team.problem_statement or ""
+            ps_id = extract_problem_statement_id(ps)
             rows.append([
                 counter,
                 "NxTech Hackathon",
@@ -451,7 +561,8 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
                 m.roll,
                 m.dept,
                 "Team Leader" if m.is_leader else "Member",
-                m.team.problem_statement or "",
+                ps_id,
+                ps,
                 m.team.leader_name,
                 m.team.leader_contact or "",
                 m.team.leader_email or "",
@@ -469,6 +580,7 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
                 m.roll,
                 m.dept,
                 "Team Leader" if m.is_leader else "Member",
+                "-",
                 m.team.topic or "Forensic Case Defense",
                 m.team.leader_name,
                 m.team.leader_contact or "",
@@ -490,20 +602,20 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
         return generate_csv_response(filename, headers, rows)
 
     def view_download_hackathon_excel(self, request):
-        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Problem Track", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
+        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Problem Statement ID", "Problem Statement", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
         hack_members = HackathonMember.objects.select_related('team').order_by('team__team_name', '-is_leader')
         rows = [
-            [idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
+            [idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", extract_problem_statement_id(m.team.problem_statement), m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
             for idx, m in enumerate(hack_members, start=1)
         ]
         filename = f"NxTech26_Hackathon_Students_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
         return generate_excel_response(filename, "Hackathon Students", headers, rows)
 
     def view_download_hackathon_csv(self, request):
-        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Problem Track", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
+        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Problem Statement ID", "Problem Statement", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
         hack_members = HackathonMember.objects.select_related('team').order_by('team__team_name', '-is_leader')
         rows = [
-            [idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
+            [idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", extract_problem_statement_id(m.team.problem_statement), m.team.problem_statement, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
             for idx, m in enumerate(hack_members, start=1)
         ]
         filename = f"NxTech26_Hackathon_Students_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
@@ -528,3 +640,4 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
         ]
         filename = f"NxTech26_Failure_Analysis_Students_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
         return generate_csv_response(filename, headers, rows)
+

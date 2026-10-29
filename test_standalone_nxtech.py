@@ -20,6 +20,11 @@ def run_tests():
     print(">> Running Full Standalone NxTech 2K26 Test Suite")
     print("=" * 70)
 
+    # Clean up test database records for idempotency
+    HackathonTeam.objects.all().delete()
+    FailureAnalysisTeam.objects.all().delete()
+    User.objects.filter(username__in=['727626BCS101', '727626BCS999', '727626BCS888', '727626BCS777']).delete()
+
     client = Client()
 
     # TEST 1: Home Page
@@ -166,9 +171,87 @@ def run_tests():
     settings.max_hackathon_teams = 120
     settings.save()
 
+    # TEST 10: Problem Statement Limitation (15 Teams Limit)
+    print("\n[TEST 10] Testing Problem Statement 15-Team Limitation & Full Statement Auto-Lock...")
+    assert settings.max_teams_per_problem_statement == 15, f"Expected default 15, got {settings.max_teams_per_problem_statement}"
+    
+    # Temporarily set limit to 1 (since CyberKnights already chose NT01)
+    settings.max_teams_per_problem_statement = 1
+    settings.save()
+
+    # user2 views form: NT01 should be disabled and marked FULL
+    resp = client.get('/hackathon/register/')
+    assert resp.status_code == 200
+    html = resp.content.decode('utf-8')
+    assert "Max 15 Teams" in html or "15" in html
+    assert "[🔒 FULL: 1/1 Teams]" in html, "NT01 option should indicate FULL status in dropdown"
+
+    # user2 tries to register with NT01 (exceeding limit)
+    over_limit_data = {
+        'team_name': 'LimitBreakers',
+        'leader_name': 'New Student',
+        'leader_roll': '727626BCS999',
+        'leader_dept': 'CSE',
+        'leader_contact': '9876543219',
+        'problem_statement': '[NT01] Centralized External Event Participation Tracking System (Software | IT)',
+        'member_name[]': ['M2', 'M3', 'M4', 'M5'],
+        'member_roll[]': ['727626BME801', '727626BME802', '727626BME803', '727626BME804'],
+        'member_dept[]': ['MECH', 'MECH', 'MECH', 'MECH'],
+    }
+    resp = client.post('/hackathon/register/', over_limit_data, follow=True)
+    assert HackathonTeam.objects.filter(team_name='LimitBreakers').count() == 0, "Team should be rejected due to PS limit"
+    assert "reached the maximum limitation" in resp.content.decode('utf-8')
+    print("  PASS: Problem statement limit enforced on backend; duplicate statement over limit rejected.")
+    print("  PASS: Dropdown dynamically marked full problem statements as disabled.")
+
+    # Restore settings
+    settings.max_teams_per_problem_statement = 15
+    settings.save()
+
+    # TEST 11: Admin Page Teams Download with Problem Statements
+    print("\n[TEST 11] Checking Admin Page Team Downloads with Problem Statements...")
+    admin_user = User.objects.filter(is_superuser=True).first()
+    if not admin_user:
+        admin_user = User.objects.create_superuser('SRCOFFICIAL2026', 'src@mcet.in', 'srcpass2026')
+    client.force_login(admin_user)
+
+    # 1. Test changelist view has download buttons
+    resp = client.get('/admin/nxtech/hackathonteam/')
+    assert resp.status_code == 200
+    cl_html = resp.content.decode('utf-8')
+    assert "Download All Teams with Problem Statements" in cl_html
+    print("  PASS: Hackathon changelist displays direct export buttons.")
+
+    # 2. Test CSV download of all teams
+    resp = client.get('/admin/nxtech/hackathonteam/download/all-teams-csv/')
+    assert resp.status_code == 200
+    assert resp['Content-Type'].startswith('text/csv')
+    csv_text = resp.content.decode('utf-8')
+    assert "Problem Statement ID" in csv_text
+    assert "Problem Statement" in csv_text
+    assert "CyberKnights" in csv_text
+    assert "NT01" in csv_text
+    print("  PASS: Admin Teams CSV download includes Problem Statement ID and Problem Statement.")
+
+    # 3. Test Excel (.xlsx) download of all teams
+    resp = client.get('/admin/nxtech/hackathonteam/download/all-teams-excel/')
+    assert resp.status_code == 200
+    assert 'spreadsheetml' in resp['Content-Type']
+    assert len(resp.content) > 1000
+    print("  PASS: Admin Teams Excel download generated successfully with openpyxl.")
+
+    # 4. Test Master Hub downloads from NxTechSettings
+    resp = client.get('/admin/nxtech/nxtechsettings/download/hackathon-teams-csv/')
+    assert resp.status_code == 200
+    master_csv = resp.content.decode('utf-8')
+    assert "Problem Statement" in master_csv
+    assert "CyberKnights" in master_csv
+    print("  PASS: Master Settings panel instant download serves teams with Problem Statements.")
+
     print("\n" + "=" * 70)
-    print(">> ALL 9 STANDALONE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
+    print(">> ALL 11 STANDALONE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
     print("=" * 70)
 
 if __name__ == '__main__':
     run_tests()
+

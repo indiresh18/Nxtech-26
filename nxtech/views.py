@@ -1,9 +1,11 @@
+import re
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
 
 from .models import (
@@ -33,6 +35,18 @@ def get_department_list():
         # Fallback defaults if table is empty initially
         return ['AIDS', 'CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'MCT', 'AUTO', 'CSE-CS', 'CSE-AIML', 'S&H']
     return dept_codes
+
+
+def extract_problem_statement_id(statement_str):
+    """
+    Extracts the official problem statement ID (e.g. NT01 - NT30) from any string.
+    """
+    if not statement_str:
+        return ""
+    match = re.search(r'\b(NT\d{1,2})\b', str(statement_str), re.IGNORECASE)
+    if match:
+        return match.group(1).upper()
+    return str(statement_str).strip()
 
 
 def check_student_already_registered(roll_number):
@@ -253,10 +267,47 @@ def register_hackathon(request):
     if hasattr(request.user, 'department') and request.user.department:
         user_dept = request.user.department.code
 
-    ps_data_json = json.dumps({item['ps_id']: item for item in HACKATHON_PROBLEM_STATEMENTS})
+    ps_limit = getattr(settings, 'max_teams_per_problem_statement', 15)
+
+    # Build problem statements list with live team counts and capacity status
+    problem_statements_data = []
+    ps_database_dict = {}
+
+    for item in HACKATHON_PROBLEM_STATEMENTS:
+        ps_id = item['ps_id']
+        count = HackathonTeam.objects.filter(problem_statement__icontains=ps_id).count()
+        remaining = max(0, ps_limit - count)
+        is_full = (count >= ps_limit)
+        label = f"[{ps_id}] {item['title']} ({item['category']} | {item['stream']})"
+        problem_statements_data.append({
+            'code': ps_id,
+            'label': label,
+            'title': item['title'],
+            'type': item['category'],
+            'stream': item['stream'],
+            'description': item['description'],
+            'count': count,
+            'limit': ps_limit,
+            'remaining': remaining,
+            'is_full': is_full,
+        })
+        ps_database_dict[ps_id] = {
+            'ps_id': ps_id,
+            'title': item['title'],
+            'description': item['description'],
+            'type': item['category'],
+            'stream': item['stream'],
+            'count': count,
+            'limit': ps_limit,
+            'remaining': remaining,
+            'is_full': is_full,
+        }
+
+    ps_data_json = json.dumps(ps_database_dict)
     form_context = {
         'departments': departments,
-        'problem_statements': TENTATIVE_PROBLEM_STATEMENTS,
+        'problem_statements': problem_statements_data,
+        'ps_limit': ps_limit,
         'user_dept': user_dept,
         'ps_data_json': ps_data_json,
     }
@@ -303,6 +354,22 @@ def register_hackathon(request):
         if not problem_statement:
             messages.error(request, "Please select an official Problem Statement (NT01 to NT30).")
             return render(request, "nxtech/register_hackathon.html", form_context)
+
+        # Check problem statement limit (e.g. 15 teams maximum per statement)
+        ps_id = extract_problem_statement_id(problem_statement)
+        if ps_id:
+            current_ps_count = HackathonTeam.objects.filter(problem_statement__icontains=ps_id).count()
+            if current_ps_count >= ps_limit:
+                messages.error(
+                    request,
+                    f"Problem Statement [{ps_id}] has reached the maximum limitation of {ps_limit} teams. "
+                    "Each problem statement can only be chosen by up to 15 teams. Please select a different problem statement."
+                )
+                return render(request, "nxtech/register_hackathon.html", form_context)
+
+            matching_ps = next((item for item in HACKATHON_PROBLEM_STATEMENTS if item['ps_id'] == ps_id), None)
+            if matching_ps:
+                problem_statement_detail = matching_ps['description']
 
         # Fixed team size check: Exactly 5 members (1 Leader + 4 Members)
         if len(members_data) != 4:
@@ -558,3 +625,4 @@ def download_hackathon_problem_statements(request):
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="NxTech26_Hackathon_Problem_Statements.pdf"'
     return response
+

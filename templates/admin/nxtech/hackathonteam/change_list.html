@@ -1,0 +1,17 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="download/all-teams-excel/" class="addlink" style="background: #16A34A; color: white; font-weight: bold; border-radius: 6px; padding: 6px 12px; margin-right: 6px;">
+      📊 Download All Teams with Problem Statements (.xlsx)
+    </a>
+  </li>
+  <li>
+    <a href="download/all-teams-csv/" class="addlink" style="background: #0284C7; color: white; font-weight: bold; border-radius: 6px; padding: 6px 12px; margin-right: 6px;">
+      📄 Download All Teams (.csv)
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}
+
