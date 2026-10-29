@@ -26,15 +26,27 @@ from .problem_statements import (
 TENTATIVE_PROBLEM_STATEMENTS = get_problem_statement_choices()
 
 
+OFFICIAL_DEPARTMENTS = [
+    ("AIDS", "Artificial Intelligence & Data Science"),
+    ("AIML", "Artificial Intelligence & Machine Learning"),
+    ("CSE", "Computer Science & Engineering"),
+    ("IT", "Information Technology"),
+    ("CIVIL", "Civil Engineering"),
+    ("MECH", "Mechanical Engineering"),
+    ("EEE", "Electrical & Electronics Engineering"),
+    ("ECE", "Electronics & Communication Engineering"),
+    ("CYBER", "Cyber Security"),
+    ("VLSI", "VLSI Design & Technology"),
+    ("AU", "Automobile Engineering"),
+]
+
+
 def get_department_list():
     """
-    Returns list of department codes/names for dropdowns.
+    Returns the official ordered list of department codes for dropdowns:
+    AIDS, AIML, CSE, IT, CIVIL, MECH, EEE, ECE, CYBER, VLSI, AU
     """
-    dept_codes = list(Department.objects.values_list('code', flat=True))
-    if not dept_codes:
-        # Fallback defaults if table is empty initially
-        return ['AIDS', 'CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'MCT', 'AUTO', 'CSE-CS', 'CSE-AIML', 'S&H']
-    return dept_codes
+    return [code for code, _ in OFFICIAL_DEPARTMENTS]
 
 
 def extract_problem_statement_id(statement_str):
@@ -170,7 +182,11 @@ def signup_view(request):
         return redirect('/')
 
     error = None
-    departments = Department.objects.all()
+    dept_order = {code: i for i, (code, _) in enumerate(OFFICIAL_DEPARTMENTS)}
+    departments = sorted(
+        Department.objects.filter(code__in=dept_order.keys()),
+        key=lambda d: dept_order.get(d.code, 999)
+    )
 
     if request.method == 'POST':
         fullname = request.POST.get('fullname', '').strip()

@@ -27,17 +27,16 @@ from nxtech.models import Department, User, NxTechSettings
 
 DEPARTMENTS = [
     ("AIDS", "Artificial Intelligence & Data Science"),
+    ("AIML", "Artificial Intelligence & Machine Learning"),
     ("CSE", "Computer Science & Engineering"),
     ("IT", "Information Technology"),
-    ("ECE", "Electronics & Communication Engineering"),
-    ("EEE", "Electrical & Electronics Engineering"),
-    ("MECH", "Mechanical Engineering"),
     ("CIVIL", "Civil Engineering"),
-    ("MCT", "Mechatronics Engineering"),
-    ("AUTO", "Automobile Engineering"),
-    ("CSE-CS", "CSE (Cyber Security)"),
-    ("CSE-AIML", "CSE (AI & Machine Learning)"),
-    ("S&H", "Science & Humanities"),
+    ("MECH", "Mechanical Engineering"),
+    ("EEE", "Electrical & Electronics Engineering"),
+    ("ECE", "Electronics & Communication Engineering"),
+    ("CYBER", "Cyber Security"),
+    ("VLSI", "VLSI Design & Technology"),
+    ("AU", "Automobile Engineering"),
 ]
 
 def main():
@@ -53,13 +52,23 @@ def main():
 
     # 2. Seed Departments
     print("\n[2/4] Seeding departments...")
+    valid_codes = []
     for code, name in DEPARTMENTS:
+        valid_codes.append(code)
         dept, created = Department.objects.get_or_create(code=code, defaults={'name': name})
         if created:
             print(f"  + Created: {code} - {name}")
         else:
-            print(f"  * Existing: {code}")
-    print("  SUCCESS: Departments configured.")
+            if dept.name != name:
+                dept.name = name
+                dept.save()
+            print(f"  * Configured: {code} - {name}")
+
+    # Remove deprecated departments
+    deleted_count, _ = Department.objects.exclude(code__in=valid_codes).delete()
+    if deleted_count:
+        print(f"  - Removed {deleted_count} deprecated department records.")
+    print("  SUCCESS: Official 11 departments configured.")
 
     # 3. Create Official Superuser
     print("\n[3/4] Setting up Superuser...")
