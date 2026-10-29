@@ -1,0 +1,328 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NxTech Hackathon Registration | SRC</title>
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .nx-btn-gradient {
+            background: linear-gradient(135deg, #7C1A7E 0%, #A81478 100%);
+        }
+        .nx-btn-gradient:hover {
+            background: linear-gradient(135deg, #641366 0%, #8E1066 100%);
+        }
+    </style>
+</head>
+<body class="font-poppins bg-[#F8F9FA] text-gray-900 min-h-screen flex flex-col antialiased">
+
+    {% include 'nav.html' %}
+
+    <main class="max-w-4xl mx-auto px-6 py-10 w-full flex-1">
+        
+        <!-- Breadcrumb & Header -->
+        <div class="mb-6">
+            <a href="{% url 'nxtech_home' %}" class="inline-flex items-center text-sm font-semibold text-purple-700 hover:text-purple-900 mb-3 transition">
+                ← Back to NxTech'26 Home
+            </a>
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 font-[Montserrat]">NxTech Hackathon Registration</h1>
+                <p class="text-gray-600 text-sm mt-1">Exclusively for First-Year Students • Fixed Team Size: Exactly 5 Members (1 Leader + 4 Members)</p>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="p-4 mb-3 rounded-xl {% if message.tags == 'error' %}bg-red-100 border border-red-300 text-red-800{% elif message.tags == 'success' %}bg-green-100 border border-green-300 text-green-800{% else %}bg-amber-100 border border-amber-300 text-amber-800{% endif %} flex items-center justify-between shadow-sm">
+                <p class="text-base font-medium">{{ message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Exclusivity Notice -->
+        <div class="p-4 mb-4 rounded-2xl bg-purple-50 border border-purple-200 text-sm text-[#7C1A7E]">
+            <strong>NxTech Participation Policy:</strong> Teams must have a <strong>fixed size of exactly 5 members</strong>. Each student can be in <strong>only ONE team</strong> across both Hackathon and Failure Analysis.
+        </div>
+
+        <!-- Inter-Department Bonus Callout -->
+        <div class="p-4 mb-8 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-sm font-semibold flex items-center gap-2 shadow-sm">
+            <span class="text-xl">⭐</span>
+            <span><strong>BONUS:</strong> INTER DEPARTMENT TEAMS WILL GET EXTRA 10 points on the final score!</span>
+        </div>
+
+        <!-- REGISTRATION FORM -->
+        <form method="POST" class="space-y-8" id="hackathon-form">
+            {% csrf_token %}
+
+            <!-- SECTION 1: TEAM BASIC INFO -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-200 shadow-sm space-y-6">
+                <h2 class="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                    <span>1.</span> Team Information
+                </h2>
+
+                <div>
+                    <label for="team_name" class="block text-sm font-semibold text-gray-800 mb-1">
+                        Team Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="team_name" name="team_name" required placeholder="e.g. Nexus Innovators, CodeCrafters"
+                        class="w-full text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                </div>
+            </div>
+
+            <!-- SECTION 2: TEAM LEADER INFO -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-200 shadow-sm space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span>2.</span> Team Leader Details <span class="text-xs font-normal text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full">(Primary Registrant)</span>
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="leader_name" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Team Leader Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="leader_name" name="leader_name" required
+                            value="{{ request.user.full_name|default:request.user.username }}"
+                            class="w-full text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                    </div>
+
+                    <div>
+                        <label for="leader_roll" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Team Leader Roll Number <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="leader_roll" name="leader_roll" required
+                            value="{{ request.user.username }}"
+                            class="w-full uppercase text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition font-mono">
+                    </div>
+
+                    <div>
+                        <label for="leader_dept" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Department <span class="text-red-500">*</span>
+                        </label>
+                        <select id="leader_dept" name="leader_dept" required
+                            class="w-full text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            {% for dept in departments %}
+                            <option value="{{ dept }}" {% if user_dept == dept %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="leader_contact" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Phone / WhatsApp Number
+                        </label>
+                        <input type="text" id="leader_contact" name="leader_contact"
+                            value="{{ request.user.phone|default:'' }}" placeholder="10-digit mobile number"
+                            class="w-full text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: FIXED 4 TEAM MEMBERS (TOTAL TEAM = 5) -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-200 shadow-sm space-y-6">
+                <div class="border-b border-gray-100 pb-3">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span>3.</span> Team Members
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Fixed team size: Exactly 4 additional members (1 Leader + 4 Members = 5 Total)</p>
+                </div>
+
+                <div class="space-y-5">
+                    
+                    <!-- MEMBER 2 -->
+                    <div class="p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Member 2</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Student Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_name[]" required placeholder="Full Name"
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Roll Number <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_roll[]" required placeholder="e.g. 727626BCS002"
+                                    class="w-full uppercase font-mono text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Department <span class="text-red-500">*</span></label>
+                                <select name="member_dept[]" required
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                                    {% for dept in departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MEMBER 3 -->
+                    <div class="p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Member 3</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Student Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_name[]" required placeholder="Full Name"
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Roll Number <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_roll[]" required placeholder="e.g. 727626BAD003"
+                                    class="w-full uppercase font-mono text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Department <span class="text-red-500">*</span></label>
+                                <select name="member_dept[]" required
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                                    {% for dept in departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MEMBER 4 -->
+                    <div class="p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Member 4</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Student Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_name[]" required placeholder="Full Name"
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Roll Number <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_roll[]" required placeholder="e.g. 727626BEC004"
+                                    class="w-full uppercase font-mono text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Department <span class="text-red-500">*</span></label>
+                                <select name="member_dept[]" required
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                                    {% for dept in departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MEMBER 5 -->
+                    <div class="p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Member 5</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Student Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_name[]" required placeholder="Full Name"
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Roll Number <span class="text-red-500">*</span></label>
+                                <input type="text" name="member_roll[]" required placeholder="e.g. 727626BME005"
+                                    class="w-full uppercase font-mono text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Department <span class="text-red-500">*</span></label>
+                                <select name="member_dept[]" required
+                                    class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                                    {% for dept in departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECTION 4: OFFICIAL PROBLEM STATEMENT SELECTION -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-200 shadow-sm space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <span>4.</span> Problem Statement Selection <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full">NT01 – NT30</span>
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-1">Select your team's Problem Statement from the official 30 curated challenges.</p>
+                    </div>
+                    <a href="{% url 'download_hackathon_problem_statements' %}" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-3.5 py-2 rounded-xl border border-purple-200 transition">
+                        <span>📥</span> Download Full PDF
+                    </a>
+                </div>
+
+                <div>
+                    <label for="problem_statement" class="block text-sm font-semibold text-gray-800 mb-1">
+                        Select Problem Statement <span class="text-red-500">*</span>
+                    </label>
+                    <select id="problem_statement" name="problem_statement" required onchange="updateStatementPreview()"
+                        class="w-full text-sm md:text-base rounded-xl border border-gray-300 py-3.5 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                        <option value="">-- Choose Problem Statement (NT01 – NT30) --</option>
+                        {% for code, label in problem_statements %}
+                        <option value="{{ label }}" data-code="{{ code }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- DYNAMIC STATEMENT PREVIEW CARD -->
+                    <div id="ps-preview-box" style="display: none;" class="mt-4 p-5 rounded-2xl bg-purple-50/80 border border-purple-200 text-sm space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span id="ps-preview-code" class="px-2.5 py-0.5 rounded-md bg-[#7C1A7E] text-white font-mono font-bold text-xs"></span>
+                            <span id="ps-preview-badges" class="flex gap-2"></span>
+                        </div>
+                        <h4 id="ps-preview-title" class="text-base font-bold text-gray-900"></h4>
+                        <p id="ps-preview-desc" class="text-gray-700 text-xs md:text-sm leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="pt-4">
+                <button type="submit" class="w-full py-5 px-8 rounded-2xl nx-btn-gradient text-white font-extrabold text-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-3">
+                    <span>🚀</span> Get into NxTech
+                </button>
+                <p class="text-center text-xs text-gray-500 mt-3">
+                    By submitting, you confirm that all 5 members are MCET First-Year students.
+                </p>
+            </div>
+
+        </form>
+
+    </main>
+
+    <footer class="mt-auto py-8 bg-white border-t border-gray-200 text-center text-gray-500 text-sm">
+        <p>© 2026 Student Research Council (SRC) • Dr.Mahalingam College of Engineering & Technology</p>
+    </footer>
+
+    <script>
+        const psDatabase = {{ ps_data_json|safe }};
+        function updateStatementPreview() {
+            const select = document.getElementById('problem_statement');
+            const selectedOption = select.options[select.selectedIndex];
+            const psCode = selectedOption ? selectedOption.getAttribute('data-code') : null;
+            const previewBox = document.getElementById('ps-preview-box');
+
+            if (!psCode || !psDatabase[psCode]) {
+                previewBox.style.display = 'none';
+                return;
+            }
+
+            const item = psDatabase[psCode];
+            document.getElementById('ps-preview-code').textContent = item.ps_id;
+            document.getElementById('ps-preview-title').textContent = item.title;
+            document.getElementById('ps-preview-desc').textContent = item.description;
+
+            const badgesContainer = document.getElementById('ps-preview-badges');
+            badgesContainer.innerHTML = `
+                <span class="px-2 py-0.5 rounded text-xs font-semibold ${item.type === 'Hardware' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800 border border-blue-300'}">${item.type}</span>
+                <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">${item.stream}</span>
+            `;
+            previewBox.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,561 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NxTech 2K26 | Student Research Council</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8FAFC;
+            color: #0F172A;
+            line-height: 1.6;
+        }
+        .nx-title {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .nx-gradient-text {
+            background: linear-gradient(135deg, #7C1A7E 0%, #A81478 50%, #E11D48 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .specs-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .spec-chip {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 9999px;
+            padding: 8px 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .spec-chip strong {
+            color: #0F172A;
+        }
+        .competition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 28px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        .arena-card {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 36px 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .arena-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.12);
+        }
+        .rule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 28px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        .rule-card {
+            background: #FFFFFF;
+            border-radius: 20px;
+            border: 1px solid #E2E8F0;
+            padding: 32px 28px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+        }
+        .btn-purple {
+            background: linear-gradient(135deg, #7C1A7E 0%, #A81478 100%);
+            color: #ffffff;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .btn-purple:hover {
+            background: linear-gradient(135deg, #621264 0%, #8C0E63 100%);
+            box-shadow: 0 10px 25px -5px rgba(124, 26, 126, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-dark {
+            background: #0F172A;
+            color: #ffffff;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .btn-dark:hover {
+            background: #1E293B;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.35);
+            transform: translateY(-2px);
+        }
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    {% include 'nav.html' %}
+
+    {% if messages %}
+    <div style="max-width: 980px; margin: 0 auto; width: 100%; padding: 20px 24px 0;">
+        {% for message in messages %}
+        <div class="p-4 mb-3 rounded-2xl {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800{% else %}bg-amber-50 border border-amber-200 text-amber-800{% endif %} flex items-center justify-between shadow-sm text-sm">
+            <p class="font-semibold">{{ message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- HERO HEADER -->
+    <header style="padding: 60px 24px 48px; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border-bottom: 1px solid #E2E8F0;">
+        <div style="max-width: 780px; margin: 0 auto; text-align: center;">
+            
+            <!-- Category Tag -->
+            <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 9999px; background: #F3E8FF; border: 1px solid #E9D5FF; color: #7C1A7E; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 20px;">
+                STUDENT RESEARCH COUNCIL PRESENTS
+            </div>
+            
+            <!-- Main Title -->
+            <h1 class="nx-title" style="font-size: clamp(2.5rem, 5vw, 3.75rem); font-weight: 900; line-height: 1.1; color: #0F172A; letter-spacing: -0.02em;">
+                NxTech <span class="nx-gradient-text">2K26</span>
+            </h1>
+            
+            <p class="nx-title" style="font-size: clamp(1.2rem, 2.5vw, 1.5rem); font-weight: 700; color: #334155; margin-top: 12px;">
+                First-Year Engineering Innovation Arena
+            </p>
+
+            <p style="font-size: 16px; color: #64748B; margin-top: 14px; line-height: 1.6; max-width: 620px; margin-left: auto; margin-right: auto;">
+                Two competitive tracks built exclusively for MCET first-year students. Assemble your 5-member team, pick your challenge arena, and compete for technical glory.
+            </p>
+
+            <!-- 4 SPECS BADGES -->
+            <div class="specs-bar">
+                <div class="spec-chip">
+                    <span style="color: #7C1A7E;">⏱</span>
+                    <span>Duration: <strong>6 Hours Live</strong></span>
+                </div>
+                <div class="spec-chip">
+                    <span style="color: #7C1A7E;">👥</span>
+                    <span>Squad: <strong>Fixed 5 Members</strong></span>
+                </div>
+                <div class="spec-chip">
+                    <span style="color: #7C1A7E;">🎓</span>
+                    <span>Eligibility: <strong>1st Year Students</strong></span>
+                </div>
+                <div class="spec-chip">
+                    <span style="color: #7C1A7E;">🔒</span>
+                    <span>Rule: <strong>1 Event per Student</strong></span>
+                </div>
+            </div>
+
+            <!-- User Auth / Registration Status Box -->
+            <div style="margin-top: 28px;">
+                {% if user.is_authenticated %}
+                    {% if user_registration %}
+                    <div style="padding: 18px 24px; background: #FFFFFF; border: 2px solid #D8B4FE; border-radius: 18px; max-width: 500px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div>
+                            <span class="badge-pill" style="background: #7C1A7E; color: #FFFFFF;">
+                                Already Registered
+                            </span>
+                            <div style="font-size: 17px; font-weight: 800; color: #0F172A; margin-top: 4px;">
+                                Team: {{ user_registration.team.team_name }}
+                            </div>
+                            <div style="font-size: 13px; color: #64748B;">
+                                Participating in <strong style="color: #7C1A7E;">{{ user_registration.type }}</strong>
+                            </div>
+                        </div>
+                        <a href="{% url 'nxtech_confirmation' user_registration.type|lower|cut:' ' user_registration.team_id %}" style="padding: 10px 18px; background: #7C1A7E; color: #FFFFFF; font-size: 13px; font-weight: 700; border-radius: 12px; text-decoration: none; white-space: nowrap;">
+                            View Receipt →
+                        </a>
+                    </div>
+                    {% else %}
+                    <div style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 9999px; font-size: 14px; font-weight: 500; color: #334155; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+                        <span>Logged in as <strong>{{ user.full_name|default:user.username }}</strong> ({{ user.username }})</span>
+                        <span style="color: #CBD5E1;">•</span>
+                        <span style="color: #7C1A7E; font-weight: 600;">Choose an arena below to register</span>
+                        <span style="color: #CBD5E1;">•</span>
+                        <a href="{% url 'signout' %}" style="color: #EF4444; text-decoration: none; font-weight: 600; font-size: 12px;">Sign Out ↗</a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                <div style="display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 12px 24px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); font-size: 14px;">
+                    <span style="color: #475569; font-weight: 500;">Student login required to register:</span>
+                    <a href="{% url 'signin' %}" style="padding: 8px 18px; background: #0F172A; color: #FFFFFF; font-weight: 700; border-radius: 10px; text-decoration: none;">Sign In</a>
+                    <a href="{% url 'signup' %}" style="padding: 8px 18px; background: #7C1A7E; color: #FFFFFF; font-weight: 700; border-radius: 10px; text-decoration: none;">Sign Up</a>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </header>
+
+    <!-- COMPETITION ARENAS -->
+    <main style="max-width: 1020px; margin: 0 auto; padding: 56px 24px; width: 100%; flex: 1;">
+        
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 class="nx-title" style="font-size: 28px; font-weight: 800; color: #0F172A;">
+                Choose Your Competition
+            </h2>
+            <p style="font-size: 15px; color: #64748B; margin-top: 6px;">
+                Each student can join <strong>only one competition</strong> and be part of <strong>only one team</strong>.
+            </p>
+        </div>
+
+        <div class="competition-grid">
+            
+            <!-- ARENA 1: HACKATHON -->
+            <div class="arena-card" style="border: 2px solid #E9D5FF;">
+                <div>
+                    <!-- Badge Header -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <span class="badge-pill" style="background: #F3E8FF; color: #7C1A7E;">
+                            Track 01 • Rapid Prototyping
+                        </span>
+                        <span style="font-size: 12px; font-weight: 700; color: #7C1A7E; background: #FAF5FF; padding: 4px 12px; border-radius: 9999px; border: 1px solid #E9D5FF;">
+                            6 Hours Live
+                        </span>
+                    </div>
+
+                    <h3 class="nx-title" style="font-size: 26px; font-weight: 800; color: #0F172A; letter-spacing: -0.01em;">
+                        NxTech Hackathon
+                    </h3>
+                    <p style="color: #7C1A7E; font-weight: 700; font-size: 14px; margin-top: 4px;">
+                        Code • Build • Demonstrate
+                    </p>
+                    
+                    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-top: 14px;">
+                        Bring your ideas to life under time pressure. Your 5-member team will develop functional software or hardware prototypes across curated real-world problem statements and pitch live to faculty and industry judges.
+                    </p>
+
+                    <!-- Highlights -->
+                    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #F1F5F9; display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155;">
+                            <span style="color: #7C1A7E; font-weight: 800; font-size: 16px; line-height: 1;">✓</span>
+                            <span><strong>30 Problem Statements:</strong> Curated challenges across Software & Hardware domains (NT01 – NT30).</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155;">
+                            <span style="color: #7C1A7E; font-weight: 800; font-size: 16px; line-height: 1;">✓</span>
+                            <span><strong>Hands-On Building:</strong> Software code or hardware prototypes created live in 6 hours.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155;">
+                            <span style="color: #7C1A7E; font-weight: 800; font-size: 16px; line-height: 1;">✓</span>
+                            <span><strong>Live Jury Pitch:</strong> Present your working demo directly to the evaluation panel.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Action -->
+                <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F1F5F9;">
+                    <div style="font-size: 12px; color: #94A3B8; font-weight: 600; margin-bottom: 12px; text-align: center;">
+                        Squad Requirement: Exactly 5 Members (1 Leader + 4 Members)
+                    </div>
+
+                    {% if user_registration and user_registration.type == 'Failure Analysis' %}
+                    <div style="width: 100%; padding: 14px; border-radius: 14px; background: #F1F5F9; color: #64748B; font-weight: 700; font-size: 14px; text-align: center; cursor: not-allowed; border: 1px solid #CBD5E1;">
+                        🔒 Registration Locked • Registered in Failure Analysis
+                    </div>
+                    {% elif user_registration and user_registration.type == 'Hackathon' %}
+                    <a href="{% url 'nxtech_confirmation' 'hackathon' user_registration.team_id %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 14px; background: #FAF5FF; color: #7C1A7E; border: 2px solid #E9D5FF; font-weight: 700; font-size: 15px; text-decoration: none;">
+                        <span>✓</span> View Hackathon Team Receipt
+                    </a>
+                    {% elif not settings.hackathon_registration_open %}
+                    <div style="width: 100%; padding: 14px; border-radius: 14px; background: #FEE2E2; color: #991B1B; font-weight: 700; font-size: 14px; text-align: center; border: 1px solid #FCA5A5;">
+                        🔒 Registration Closed by Admin
+                    </div>
+                    {% elif hackathon_capacity_reached %}
+                    <div style="width: 100%; padding: 14px; border-radius: 14px; background: #FEF3C7; color: #92400E; font-weight: 700; font-size: 14px; text-align: center; border: 1px solid #FCD34D;">
+                        🔒 Capacity Full (120 Teams Reached)
+                    </div>
+                    {% else %}
+                    <a href="{% url 'register_hackathon' %}" class="btn-purple" style="text-decoration: none;">
+                        <span>Register for Hackathon</span>
+                        <span>→</span>
+                    </a>
+                    <div style="text-align: center; margin-top: 8px; font-size: 12px; color: #64748B; font-weight: 600;">
+                        <span>{{ hackathon_team_count }} / {{ settings.max_hackathon_teams }} Teams Registered (Max 120)</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- DOWNLOAD HACKATHON PROBLEM STATEMENTS -->
+                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #E9D5FF;">
+                        <a href="{% url 'download_hackathon_problem_statements' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 16px; border-radius: 12px; background: #FAF5FF; color: #7C1A7E; border: 1.5px solid #D8B4FE; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 1px 3px rgba(124, 26, 126, 0.08);">
+                            <span>📥</span>
+                            <span>Download Hackathon Statements (PDF)</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARENA 2: FAILURE ANALYSIS -->
+            <div class="arena-card" style="border: 2px solid #E2E8F0;">
+                <div>
+                    <!-- Badge Header -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <span class="badge-pill" style="background: #F1F5F9; color: #334155;">
+                            Track 02 • Forensic Investigation
+                        </span>
+                        <span style="font-size: 12px; font-weight: 700; color: #475569; background: #F8FAFC; padding: 4px 12px; border-radius: 9999px; border: 1px solid #E2E8F0;">
+                            Case Defense
+                        </span>
+                    </div>
+
+                    <h3 class="nx-title" style="font-size: 26px; font-weight: 800; color: #0F172A; letter-spacing: -0.01em;">
+                        Failure Analysis
+                    </h3>
+                    <p style="color: #475569; font-weight: 700; font-size: 14px; margin-top: 4px;">
+                        Investigate • Deconstruct • Re-Engineer
+                    </p>
+                    
+                    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-top: 14px;">
+                        Step into forensic engineering. Select a historic real-world engineering, structural, or software breakdown, uncover root causes with formal models, and defend corrective redesigns to the jury.
+                    </p>
+
+                    <!-- Highlights -->
+                    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #F1F5F9; display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155;">
+                            <span style="color: #0F172A; font-weight: 800; font-size: 16px; line-height: 1;">✓</span>
+                            <span><strong>Open Disaster Cases:</strong> Full freedom to investigate aerospace, software, energy, or mechanical failures.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155;">
+                            <span style="color: #0F172A; font-weight: 800; font-size: 16px; line-height: 1;">✓</span>
+                            <span><strong>Forensic Methodology:</strong> Apply formal tools (5-Whys, Fishbone / Ishikawa, Fault Tree).</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #334155;">
+                            <span style="color: #0F172A; font-weight: 800; font-size: 16px; line-height: 1;">✓</span>
+                            <span><strong>Preventive Redesign:</strong> Pitch actionable solutions to prevent future breakdowns.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Action -->
+                <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #F1F5F9;">
+                    <div style="font-size: 12px; color: #94A3B8; font-weight: 600; margin-bottom: 12px; text-align: center;">
+                        Squad Requirement: Exactly 5 Members (1 Leader + 4 Members)
+                    </div>
+
+                    {% if user_registration and user_registration.type == 'Hackathon' %}
+                    <div style="width: 100%; padding: 14px; border-radius: 14px; background: #F1F5F9; color: #64748B; font-weight: 700; font-size: 14px; text-align: center; cursor: not-allowed; border: 1px solid #CBD5E1;">
+                        🔒 Registration Locked • Registered in Hackathon
+                    </div>
+                    {% elif user_registration and user_registration.type == 'Failure Analysis' %}
+                    <a href="{% url 'nxtech_confirmation' 'failure-analysis' user_registration.team_id %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 14px; background: #F8FAFC; color: #0F172A; border: 2px solid #CBD5E1; font-weight: 700; font-size: 15px; text-decoration: none;">
+                        <span>✓</span> View Failure Analysis Team Receipt
+                    </a>
+                    {% elif not settings.failure_analysis_registration_open %}
+                    <div style="width: 100%; padding: 14px; border-radius: 14px; background: #FEE2E2; color: #991B1B; font-weight: 700; font-size: 14px; text-align: center; border: 1px solid #FCA5A5;">
+                        🔒 Registration Closed by Admin
+                    </div>
+                    {% elif fa_capacity_reached %}
+                    <div style="width: 100%; padding: 14px; border-radius: 14px; background: #FEF3C7; color: #92400E; font-weight: 700; font-size: 14px; text-align: center; border: 1px solid #FCD34D;">
+                        🔒 Capacity Full (120 Teams Reached)
+                    </div>
+                    {% else %}
+                    <a href="{% url 'register_failure_analysis' %}" class="btn-dark" style="text-decoration: none;">
+                        <span>Register for Failure Analysis</span>
+                        <span>→</span>
+                    </a>
+                    <div style="text-align: center; margin-top: 8px; font-size: 12px; color: #64748B; font-weight: 600;">
+                        <span>{{ fa_team_count }} / {{ settings.max_fa_teams }} Teams Registered (Max 120)</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RULES & INSTRUCTIONS -->
+        <section style="margin-top: 72px; padding-top: 48px; border-top: 1px solid #E2E8F0;">
+            <div style="text-align: center; max-width: 620px; margin: 0 auto 36px;">
+                <span class="badge-pill" style="background: #F1F5F9; color: #475569;">
+                    Official Competition Rules
+                </span>
+                <h2 class="nx-title" style="font-size: 28px; font-weight: 800; color: #0F172A; margin-top: 12px;">
+                    Rules & Instructions
+                </h2>
+                <p style="font-size: 15px; color: #64748B; margin-top: 6px;">
+                    4 core guidelines for each competition. Please read carefully before registering.
+                </p>
+            </div>
+
+            <div class="rule-grid">
+                
+                <!-- HACKATHON RULES -->
+                <div class="rule-card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid #F1F5F9;">
+                        <div>
+                            <h3 class="nx-title" style="font-size: 18px; font-weight: 800; color: #0F172A;">Hackathon Guidelines</h3>
+                            <p style="font-size: 12px; color: #7C1A7E; font-weight: 700; margin-top: 2px;">6-Hour Innovation Sprint</p>
+                        </div>
+                        <span style="padding: 4px 10px; background: #F3E8FF; color: #7C1A7E; font-size: 11px; font-weight: 700; border-radius: 8px;">4 Points</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; color: #7C1A7E; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">1</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Team Size & Eligibility</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    Exclusively for MCET First-Year students. Every team must have a <strong>fixed size of exactly 5 members</strong> (1 Team Leader + 4 Members). Inter-department teams are encouraged.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; color: #7C1A7E; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">2</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Problem Statement Track</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    Teams choose one tentative domain track during registration. Detailed challenge briefs, criteria, and mentor checkpoints will be released at kick-off.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; color: #7C1A7E; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">3</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">6-Hour Live Development</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    All source code, hardware models, and presentations must be constructed during the <strong>6-hour hackathon timeline</strong>. Pre-built or plagiarized projects will be disqualified.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F3E8FF; color: #7C1A7E; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">4</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Evaluation Criteria</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    Evaluated on Innovation & Feasibility (30%), Technical Implementation (30%), Practical Impact (20%), and Live Prototype Demo & Pitch (20%).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAILURE ANALYSIS RULES -->
+                <div class="rule-card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid #F1F5F9;">
+                        <div>
+                            <h3 class="nx-title" style="font-size: 18px; font-weight: 800; color: #0F172A;">Failure Analysis Guidelines</h3>
+                            <p style="font-size: 12px; color: #475569; font-weight: 700; margin-top: 2px;">Forensic Case Study & Defense</p>
+                        </div>
+                        <span style="padding: 4px 10px; background: #F1F5F9; color: #334155; font-size: 11px; font-weight: 700; border-radius: 8px;">4 Points</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F1F5F9; color: #334155; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">1</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Team Size & Eligibility</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    Exclusively for MCET First-Year students. Every team must have a <strong>fixed size of exactly 5 members</strong> (1 Team Leader + 4 Members) from any academic branch.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F1F5F9; color: #334155; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">2</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Open Case Investigation</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    No pre-assigned problem statements. Teams have total freedom to research and analyze any real-world technological, structural, or software breakdown.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F1F5F9; color: #334155; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">3</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Forensic Methodology</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    Analysis must demonstrate structured failure investigation tools (e.g. 5-Whys, Fishbone / Ishikawa diagram, or Fault-Tree) and sound preventive actions.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 14px;">
+                            <span style="width: 26px; height: 26px; border-radius: 50%; background: #F1F5F9; color: #334155; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; shrink-0; margin-top: 2px;">4</span>
+                            <div>
+                                <h4 style="font-size: 14px; font-weight: 700; color: #0F172A;">Jury Defense & Scoring</h4>
+                                <p style="font-size: 13px; color: #475569; margin-top: 4px; line-height: 1.5;">
+                                    Judged on Investigation Depth & Evidence (35%), Failure Breakdown Precision (25%), Practicality of Proposed Fix (20%), and Presentation (20%).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SPECIAL BONUS CALLOUT -->
+            <div style="margin-top: 36px; max-width: 780px; margin-left: auto; margin-right: auto; padding: 22px 30px; background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px dashed #F59E0B; border-radius: 20px; text-align: center; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 900; font-size: 18px; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em;">
+                    <span style="font-size: 24px;">⭐</span>
+                    <span>INTER DEPARTMENT TEAMS WILL GET EXTRA 10 points</span>
+                    <span style="font-size: 24px;">⭐</span>
+                </div>
+                <p style="margin-top: 8px; font-size: 14px; color: #78350F; font-weight: 600; line-height: 1.5;">
+                    Cross-department squads are highly rewarded! Teams formed with members from different academic branches will receive an exclusive <strong>10 bonus points</strong> towards their overall evaluation score.
+                </p>
+            </div>
+
+            <!-- Tentative Note -->
+            <div style="margin-top: 32px; text-align: center; font-size: 13px; color: #94A3B8;">
+                📌 <em>Note: Rule guidelines are tentative and will be updated closer to the competition date.</em>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer style="margin-top: auto; padding: 32px 24px; background: #FFFFFF; border-top: 1px solid #E2E8F0; text-align: center; color: #94A3B8; font-size: 13px;">
+        <p>© 2026 Student Research Council (SRC) • Dr.Mahalingam College of Engineering & Technology</p>
+    </footer>
+
+</body>
+</html>

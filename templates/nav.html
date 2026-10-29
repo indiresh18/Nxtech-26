@@ -1,0 +1,42 @@
+{% load static %}
+<nav class="px-6 md:px-12 shadow-sm py-4 md:py-5 flex justify-between items-center w-full font-poppins sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
+    <div>
+        <a href="{% url 'nxtech_home' %}" class="flex items-center gap-3">
+            <img src="{% static 'images/mcetlogo.png' %}" alt="MCET Logo" class="h-9 md:h-10 w-auto" />
+            <span class="w-[1px] h-6 bg-gray-300"></span>
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/srclogo.png' %}" alt="SRC Logo" class="h-10 md:h-11 w-auto" />
+                <div class="hidden sm:flex flex-col justify-center">
+                    <p class="text-xs text-gray-500 font-medium leading-tight">Dr.Mahalingam College of Engineering & Technology</p>
+                    <p class="text-base md:text-lg font-bold text-gray-900 leading-tight">Student Research Council</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="flex items-center gap-3 md:gap-5">
+        <a href="{% url 'nxtech_home' %}" class="text-sm font-semibold text-gray-700 hover:text-[#7C1A7E] transition px-3 py-2 rounded-lg hover:bg-gray-50">
+            NxTech'26 Home
+        </a>
+
+        {% if user.is_authenticated %}
+        <div class="flex items-center gap-2 md:gap-3 bg-purple-50/80 border border-purple-200 py-1.5 px-3 md:px-4 rounded-full">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="text-xs md:text-sm font-bold text-purple-900 font-mono">{{ user.username }}</span>
+            <span class="text-gray-300">•</span>
+            <a href="{% url 'signout' %}" class="text-xs font-semibold text-red-600 hover:text-red-700 transition">
+                Logout
+            </a>
+        </div>
+        {% else %}
+        <div class="flex items-center gap-2">
+            <a href="{% url 'signin' %}" class="text-xs md:text-sm font-bold text-gray-700 hover:text-black px-3 py-2 rounded-lg transition">
+                Sign In
+            </a>
+            <a href="{% url 'signup' %}" class="text-xs md:text-sm font-bold bg-[#7C1A7E] hover:bg-[#621264] text-white px-4 py-2 rounded-xl transition shadow-sm">
+                Sign Up
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</nav>

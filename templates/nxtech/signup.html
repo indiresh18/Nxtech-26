@@ -1,0 +1,168 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <title>Student Registration | NxTech 2K26</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .nx-btn-gradient {
+            background: linear-gradient(135deg, #7C1A7E 0%, #A81478 100%);
+        }
+        .nx-btn-gradient:hover {
+            background: linear-gradient(135deg, #641366 0%, #8E1066 100%);
+        }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] font-poppins min-h-screen flex flex-col antialiased">
+
+    {% include 'nav.html' %}
+
+    <main class="flex-1 flex justify-center items-center px-4 py-10">
+        <div class="w-full max-w-lg bg-white p-8 md:p-10 rounded-3xl border border-gray-200 shadow-xl">
+            
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center gap-3 mb-3">
+                    <img src="{% static 'images/mcetlogo.png' %}" alt="MCET Logo" class="h-9 w-auto">
+                    <span class="text-gray-300 text-xl font-light">|</span>
+                    <img src="{% static 'images/srclogo.png' %}" alt="SRC Logo" class="h-10 w-auto">
+                </div>
+                <h1 class="text-3xl font-extrabold text-gray-900 font-[Montserrat]">Create Student Account</h1>
+                <p class="text-gray-500 text-sm mt-1">Exclusively for MCET First-Year Students</p>
+                
+                <p class="mt-3 text-sm text-gray-600">
+                    Already have an account?
+                    <a href="{% url 'signin' %}{% if next %}?next={{ next }}{% endif %}" class="font-bold text-[#7C1A7E] hover:underline">
+                        Sign In here →
+                    </a>
+                </p>
+            </div>
+
+            {% if error %}
+            <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+
+                <!-- NAME -->
+                <div>
+                    <label for="fullname" class="block text-sm font-semibold text-gray-800 mb-1">
+                        Student Full Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="fullname" name="fullname" required placeholder="e.g. John Doe"
+                        class="w-full text-base rounded-xl border border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                </div>
+
+                <!-- ROLL NO -->
+                <div>
+                    <label for="roll" class="block text-sm font-semibold text-gray-800 mb-1">
+                        Student Roll Number <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="roll" name="roll" required placeholder="e.g. 727626BCS001"
+                        class="w-full uppercase text-base rounded-xl border border-gray-300 py-3 px-4 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition font-mono">
+                    <p class="text-xs text-gray-400 mt-1">This will be your permanent login username</p>
+                </div>
+
+                <!-- DEPARTMENT & YEAR OF STUDY -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="department" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Department <span class="text-red-500">*</span>
+                        </label>
+                        <select id="department" name="department" required
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white">
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.code }} - {{ dept.name }}</option>
+                            {% empty %}
+                            <option value="">AIDS</option>
+                            <option value="">CSE</option>
+                            <option value="">IT</option>
+                            <option value="">ECE</option>
+                            <option value="">EEE</option>
+                            <option value="">MECH</option>
+                            <option value="">CIVIL</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="yos" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Year of Study <span class="text-red-500">*</span>
+                        </label>
+                        <select id="yos" name="yos" required disabled
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3 text-gray-700 shadow-sm outline-none bg-gray-100 cursor-not-allowed">
+                            <option value="First Year" selected>First Year Only</option>
+                        </select>
+                        <input type="hidden" name="yos" value="First Year">
+                    </div>
+                </div>
+
+                <!-- PHONE & EMAIL -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="phone" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Phone Number
+                        </label>
+                        <input type="tel" id="phone" name="phone" placeholder="10-digit number"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Email (Optional)
+                        </label>
+                        <input type="email" id="email" name="email" placeholder="student@mcet.in"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                    </div>
+                </div>
+
+                <!-- PASSWORDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="password1" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Password <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="password1" name="password1" required placeholder="Min 6 characters"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                    </div>
+
+                    <div>
+                        <label for="password2" class="block text-sm font-semibold text-gray-800 mb-1">
+                            Confirm Password <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="password2" name="password2" required placeholder="Repeat password"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none transition">
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-4 px-6 rounded-2xl nx-btn-gradient text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                        Create Account →
+                    </button>
+                </div>
+
+            </form>
+
+            <p class="mt-6 text-center text-xs text-gray-500">
+                Already registered?
+                <a href="{% url 'signin' %}{% if next %}?next={{ next }}{% endif %}" class="font-semibold text-purple-700 underline">Sign In</a> instead.
+            </p>
+
+        </div>
+    </main>
+
+    <footer class="py-6 text-center text-gray-400 text-xs border-t border-gray-200 bg-white">
+        © 2026 Student Research Council (SRC) • Dr.Mahalingam College of Engineering & Technology
+    </footer>
+
+</body>
+</html>
