@@ -20,6 +20,14 @@ fi
 mkdir -p staticfiles
 python manage.py collectstatic --noinput --clear
 
+# Ensure staticfiles/static exists so both /static/ and root route resolutions succeed
+mkdir -p staticfiles/static
+cp -r static/* staticfiles/static/ 2>/dev/null || true
+cp -r staticfiles/admin staticfiles/static/ 2>/dev/null || true
+
+if [ -n "$DATABASE_URL" ]; then
+    echo "=== Running Database Migrations on Supabase ==="
+    python manage.py migrate --noinput
+fi
+
 echo "=== Build Complete ==="
-
-
