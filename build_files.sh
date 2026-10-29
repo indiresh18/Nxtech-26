@@ -3,22 +3,22 @@ set -e
 
 echo "=== Building NxTech 2K26 on Vercel ==="
 
-# 1. Upgrade pip and install all project requirements
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
-
-# 2. Ensure user-level site-packages are visible to python3
-USER_SITE=$(python3 -m site --user-site 2>/dev/null || echo "")
-if [ -n "$USER_SITE" ]; then
-    export PYTHONPATH="${PYTHONPATH}:${USER_SITE}"
+# Use an isolated virtual environment to satisfy PEP 668 in uv-managed Python environments
+if command -v uv &> /dev/null; then
+    echo ">> Detected uv: creating isolated virtual environment..."
+    uv venv .venv
+    source .venv/bin/activate
+    uv pip install -r requirements.txt
+else
+    echo ">> Using python3 -m venv..."
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install -r requirements.txt
 fi
-export PATH="${PATH}:/root/.local/bin:~/.local/bin"
 
-# 3. Ensure staticfiles output directory exists
+# Ensure output directory exists and collect static assets
 mkdir -p staticfiles
-
-# 4. Collect static files
-python3 manage.py collectstatic --noinput --clear
+python manage.py collectstatic --noinput --clear
 
 echo "=== Build Complete ==="
 
