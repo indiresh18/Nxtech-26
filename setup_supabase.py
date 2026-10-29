@@ -89,10 +89,11 @@ def main():
     settings = NxTechSettings.get_settings()
     settings.max_hackathon_teams = 120
     settings.max_fa_teams = 120
+    settings.max_teams_per_problem_statement = 15
     settings.hackathon_registration_open = True
     settings.failure_analysis_registration_open = True
     settings.save()
-    print(f"  SUCCESS: Limits Set: Max Hackathon = {settings.max_hackathon_teams}, Max Failure Analysis = {settings.max_fa_teams}")
+    print(f"  SUCCESS: Limits Set: Max Hackathon = {settings.max_hackathon_teams}, Max FA = {settings.max_fa_teams}, Max Per Statement = {settings.max_teams_per_problem_statement}")
 
     print("\n" + "=" * 60)
     print("ALL STEPS COMPLETED! NxTech 2K26 is ready to deploy & run.")

@@ -56,8 +56,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database Configuration (Supabase PostgreSQL with Local SQLite Fallback)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
+    # Use conn_max_age=0 on Vercel serverless to avoid holding idle pooler connections
+    conn_age = 0 if os.environ.get('VERCEL') else 600
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=conn_age, ssl_require=True)
     }
 else:
     DATABASES = {
