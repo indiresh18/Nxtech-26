@@ -7,3 +7,6 @@ __pycache__/
 db.sqlite3
 .git/
 .env
+test_*.py
+*.docx
+*.md

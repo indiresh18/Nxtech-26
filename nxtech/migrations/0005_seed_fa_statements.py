@@ -60,3 +60,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(seed_failure_analysis_statements, reverse_seed),
     ]
+

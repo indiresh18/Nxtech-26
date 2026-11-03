@@ -773,3 +773,4 @@ def generate_fa_papers_pdf_bytes():
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
+
