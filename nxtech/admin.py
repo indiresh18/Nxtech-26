@@ -17,6 +17,7 @@ from .models import (
     Department, User,
     HackathonTeam, HackathonMember,
     FailureAnalysisTeam, FailureAnalysisMember,
+    FailureAnalysisStatement,
     NxTechSettings
 )
 
@@ -298,16 +299,81 @@ class FailureAnalysisMemberInline(admin.TabularInline):
     can_delete = False
 
 
+@admin.register(FailureAnalysisStatement)
+class FailureAnalysisStatementAdmin(admin.ModelAdmin):
+    list_display = (
+        'ps_id', 'category_badge', 'title', 'is_active',
+        'teams_count_display', 'order'
+    )
+    list_editable = ('is_active', 'order')
+    list_filter = ('category', 'is_active')
+    search_fields = ('ps_id', 'title', 'problem_statement', 'research_sources', 'related_paper')
+    actions = ['make_visible_on_portal', 'hide_from_portal', 'export_statements_csv', 'export_statements_excel']
+    ordering = ['order', 'ps_id']
+
+    def category_badge(self, obj):
+        colors = {
+            'CIRCUIT': ('#EFF6FF', '#1D4ED8', '#93C5FD'),
+            'CORE': ('#ECFDF5', '#047857', '#6EE7B7'),
+            'STARTUP': ('#FAF5FF', '#7E22CE', '#D8B4FE'),
+        }
+        bg, text, border = colors.get(obj.category, ('#F1F5F9', '#334155', '#CBD5E1'))
+        return format_html(
+            f'<span style="padding: 3px 8px; background: {bg}; color: {text}; border: 1px solid {border}; border-radius: 6px; font-size: 11px; font-weight: bold;">{obj.get_category_display()}</span>'
+        )
+    category_badge.short_description = "Category"
+
+    def teams_count_display(self, obj):
+        count = obj.teams.count()
+        if count > 0:
+            return format_html(
+                f'<span style="padding: 2px 8px; background: #F3E8FF; color: #7C1A7E; border-radius: 9999px; font-weight: bold; font-size: 12px;">{count} Teams</span>'
+            )
+        return format_html('<span style="color: #94A3B8; font-size: 11px;">0 Teams</span>')
+    teams_count_display.short_description = "Selected By"
+
+    @admin.action(description="👁️ Make Selected Statements VISIBLE on Portal")
+    def make_visible_on_portal(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        messages.success(request, f"{updated} statement(s) are now VISIBLE on the student selection portal.")
+
+    @admin.action(description="🚫 HIDE Selected Statements from Portal")
+    def hide_from_portal(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        messages.warning(request, f"{updated} statement(s) are now HIDDEN from the student selection portal.")
+
+    @admin.action(description="⬇ Export Statements to CSV")
+    def export_statements_csv(self, request, queryset):
+        headers = ["Statement ID", "Category", "Title", "Portal Visible", "Teams Selected", "Problem Statement", "Research Sources", "Related Paper", "Order"]
+        rows = [
+            [s.ps_id, s.get_category_display(), s.title, "YES" if s.is_active else "NO", s.teams.count(), s.problem_statement, s.research_sources or "", s.related_paper or "", s.order]
+            for s in queryset
+        ]
+        return generate_csv_response(f"nxtech_fa_statements_{timezone.now().strftime('%Y%m%d_%H%M')}.csv", headers, rows)
+
+    @admin.action(description="⬇ Export Statements to Excel (.xlsx)")
+    def export_statements_excel(self, request, queryset):
+        headers = ["Statement ID", "Category", "Title", "Portal Visible", "Teams Selected", "Problem Statement", "Research Sources", "Related Paper", "Order"]
+        rows = [
+            [s.ps_id, s.get_category_display(), s.title, "YES" if s.is_active else "NO", s.teams.count(), s.problem_statement, s.research_sources or "", s.related_paper or "", s.order]
+            for s in queryset
+        ]
+        return generate_excel_response(f"nxtech_fa_statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx", "FA Statements", headers, rows)
+
+
 @admin.register(FailureAnalysisTeam)
 class FailureAnalysisTeamAdmin(admin.ModelAdmin):
     list_display = (
         'display_team_name', 'leader_name', 'leader_roll', 'leader_dept',
-        'leader_contact', 'team_size', 'created_at'
+        'selected_statement_badge', 'leader_contact', 'team_size', 'created_at'
     )
-    search_fields = ('team_name', 'leader_name', 'leader_roll', 'leader_dept')
-    list_filter = ('leader_dept', 'created_at')
+    search_fields = (
+        'team_name', 'leader_name', 'leader_roll', 'leader_dept',
+        'selected_statement__ps_id', 'selected_statement__title', 'selected_statement_title'
+    )
+    list_filter = ('selected_statement__category', 'leader_dept', 'created_at')
     inlines = [FailureAnalysisMemberInline]
-    actions = ['export_teams_csv', 'export_teams_excel']
+    actions = ['export_teams_csv', 'export_teams_excel', 'export_teams_with_statements_excel']
 
     def display_team_name(self, obj):
         return format_html(
@@ -315,28 +381,94 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
         )
     display_team_name.short_description = "Team Name (Leader Roll)"
 
+    def selected_statement_badge(self, obj):
+        if obj.selected_statement:
+            title_trunc = obj.selected_statement.title
+            if len(title_trunc) > 28:
+                title_trunc = title_trunc[:25] + "..."
+            return format_html(
+                '<div style="line-height: 1.3;">'
+                '<span style="padding: 2px 7px; background: #065F46; color: #A7F3D0; border-radius: 6px; font-size: 10px; font-weight: 800; font-family: monospace;">[{}]</span> '
+                '<span style="font-size: 11px; font-weight: 600; color: #0F172A;">{}</span>'
+                '</div>',
+                obj.selected_statement.ps_id,
+                title_trunc
+            )
+        elif obj.selected_statement_title:
+            return format_html(
+                '<span style="padding: 3px 8px; background: #F1F5F9; color: #475569; border-radius: 6px; font-size: 11px;">{}</span>',
+                obj.selected_statement_title[:25]
+            )
+        return format_html(
+            '<span style="padding: 3px 8px; background: #FFFBEB; color: #D97706; border: 1px solid #FCD34D; border-radius: 6px; font-size: 11px; font-weight: 700;">⚠️ Not Selected</span>'
+        )
+    selected_statement_badge.short_description = "Selected Statement"
+
     def team_size(self, obj):
         count = obj.members.count()
         return format_html(f"<strong>{count}</strong> members")
     team_size.short_description = "Squad Size"
 
-    @admin.action(description="⬇ Export Selected Teams to CSV")
+    @admin.action(description="⬇ Export Selected Teams to CSV (Includes Statement)")
     def export_teams_csv(self, request, queryset):
-        headers = ["Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept", "Leader Contact", "Leader Email", "Members Count", "Registered At"]
+        headers = [
+            "Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept",
+            "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title",
+            "Selection Time", "Members Count", "Registered At"
+        ]
         rows = [
-            [t.id, t.export_team_name, t.leader_name, t.leader_roll, t.leader_dept, t.leader_contact or "", t.leader_email or "", t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")]
+            [
+                t.id, t.export_team_name, t.leader_name, t.leader_roll, t.leader_dept,
+                t.leader_contact or "", t.leader_email or "",
+                t.selected_statement.ps_id if t.selected_statement else "",
+                t.selected_statement_title or (t.selected_statement.title if t.selected_statement else "NOT SELECTED"),
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "",
+                t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")
+            ]
             for t in queryset
         ]
         return generate_csv_response(f"nxtech_fa_teams_{timezone.now().strftime('%Y%m%d_%H%M')}.csv", headers, rows)
 
-    @admin.action(description="⬇ Export Selected Teams to Excel (.xlsx)")
+    @admin.action(description="⬇ Export Selected Teams to Excel (.xlsx) (Includes Statement)")
     def export_teams_excel(self, request, queryset):
-        headers = ["Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept", "Leader Contact", "Leader Email", "Members Count", "Registered At"]
+        headers = [
+            "Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept",
+            "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title",
+            "Selection Time", "Members Count", "Registered At"
+        ]
         rows = [
-            [t.id, t.export_team_name, t.leader_name, t.leader_roll, t.leader_dept, t.leader_contact or "", t.leader_email or "", t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")]
+            [
+                t.id, t.export_team_name, t.leader_name, t.leader_roll, t.leader_dept,
+                t.leader_contact or "", t.leader_email or "",
+                t.selected_statement.ps_id if t.selected_statement else "",
+                t.selected_statement_title or (t.selected_statement.title if t.selected_statement else "NOT SELECTED"),
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "",
+                t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")
+            ]
             for t in queryset
         ]
         return generate_excel_response(f"nxtech_fa_teams_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx", "Failure Analysis Teams", headers, rows)
+
+    @admin.action(description="📑 Export FA Teams & Selected Statements Summary (.xlsx)")
+    def export_teams_with_statements_excel(self, request, queryset):
+        headers = [
+            "S.No", "Team Name", "Leader Roll", "Leader Name", "Leader Dept",
+            "Leader Contact", "Statement ID", "Statement Title", "Statement Category",
+            "Locked At", "Members Count"
+        ]
+        rows = []
+        for idx, t in enumerate(queryset, start=1):
+            s = t.selected_statement
+            rows.append([
+                idx, t.export_team_name, t.leader_roll, t.leader_name, t.leader_dept,
+                t.leader_contact or "",
+                s.ps_id if s else "PENDING",
+                s.title if s else (t.selected_statement_title or "Not Selected Yet"),
+                s.get_category_display() if s else "-",
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "-",
+                t.members.count()
+            ])
+        return generate_excel_response(f"nxtech_fa_team_statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx", "FA Statements Roster", headers, rows)
 
 
 @admin.register(FailureAnalysisMember)
@@ -386,7 +518,7 @@ class FailureAnalysisMemberAdmin(admin.ModelAdmin):
 class NxTechSettingsAdmin(admin.ModelAdmin):
     list_display = (
         'control_title',
-        'hackathon_badge', 'fa_badge',
+        'hackathon_badge', 'fa_badge', 'fa_selection_badge',
         'hackathon_capacity_badge', 'download_hub_actions'
     )
     fieldsets = (
@@ -407,6 +539,13 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
             ),
             "description": "Control whether Failure Analysis registrations are open. Auto-locks once reaching 120 teams."
         }),
+        ("Failure Analysis Statement Selection Portal (Launch Morning)", {
+            "fields": (
+                "fa_statement_selection_open",
+                "fa_statement_selection_closed_msg"
+            ),
+            "description": "Control whether Failure Analysis teams can select and lock their problem statement on the website."
+        }),
     )
     actions = [
         'action_open_both',
@@ -414,7 +553,9 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
         'action_open_hackathon',
         'action_close_hackathon',
         'action_open_fa',
-        'action_close_fa'
+        'action_close_fa',
+        'action_open_fa_selection',
+        'action_close_fa_selection'
     ]
 
     def control_title(self, obj):
@@ -439,6 +580,19 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
         return format_html('<span style="padding: 4px 10px; background: #10B981; color: white; border-radius: 8px; font-weight: bold; font-size: 11px;">✓ OPEN</span>')
     fa_badge.short_description = "Failure Analysis Status"
 
+    def fa_selection_badge(self, obj):
+        selected_count = FailureAnalysisTeam.objects.filter(selected_statement__isnull=False).count()
+        total_fa = FailureAnalysisTeam.objects.count()
+        if not obj.fa_statement_selection_open:
+            return format_html('<span style="padding: 4px 10px; background: #EF4444; color: white; border-radius: 8px; font-weight: bold; font-size: 11px;">🔒 LOCKED</span>')
+        return format_html(
+            f'<div style="line-height: 1.3;">'
+            f'<span style="padding: 4px 10px; background: #065F46; color: #A7F3D0; border-radius: 8px; font-weight: bold; font-size: 11px;">✓ SELECTION OPEN</span>'
+            f'<div style="font-size: 11px; color: #64748B; margin-top: 3px;"><strong>{selected_count}</strong> / {total_fa} Teams Selected</div>'
+            f'</div>'
+        )
+    fa_selection_badge.short_description = "FA Selection Portal"
+
     def hackathon_capacity_badge(self, obj):
         count = HackathonTeam.objects.count()
         member_count = HackathonMember.objects.count()
@@ -459,8 +613,12 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
             '    <a href="/admin/nxtech/hackathonteam/download/all-teams-csv/" style="padding: 4px 10px; background: #581C87; color: white; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 Teams (.csv)</a>'
             '  </div>'
             '  <div>'
+            '    <a href="/admin/nxtech/nxtechsettings/download/fa-teams-statements-excel/" style="padding: 4px 10px; background: #0284C7; color: white; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: bold; margin-right: 5px;">🔬 FA Teams & Selected Statements (.xlsx)</a>'
+            '    <a href="/admin/nxtech/nxtechsettings/download/fa-teams-statements-csv/" style="padding: 4px 10px; background: #0369A1; color: white; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 FA Statements (.csv)</a>'
+            '  </div>'
+            '  <div>'
             '    <a href="/admin/nxtech/nxtechsettings/download/all-students-excel/" style="padding: 3px 8px; background: #16A34A; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold; margin-right: 5px;">📊 All Students (Excel)</a> '
-            '    <a href="/admin/nxtech/nxtechsettings/download/all-students-csv/" style="padding: 3px 8px; background: #0284C7; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 All Students (CSV)</a>'
+            '    <a href="/admin/nxtech/nxtechsettings/download/all-students-csv/" style="padding: 3px 8px; background: #059669; color: white; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold;">📄 All Students (CSV)</a>'
             '  </div>'
             '  <div style="font-size: 10px; color: #64748B;">'
             '    <a href="/admin/nxtech/nxtechsettings/download/hackathon-excel/" style="padding: 2px 6px; background: #6B21A8; color: white; border-radius: 4px; text-decoration: none; margin-right: 4px;">Hackathon Students (.xlsx)</a> '
@@ -514,11 +672,27 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
             s.save()
         messages.warning(request, "Failure Analysis registration has been CLOSED.")
 
+    @admin.action(description="🔓 OPEN FA Statement Selection Portal")
+    def action_open_fa_selection(self, request, queryset):
+        for s in queryset:
+            s.fa_statement_selection_open = True
+            s.save()
+        messages.success(request, "Failure Analysis Statement Selection portal has been OPENED for students.")
+
+    @admin.action(description="🔒 CLOSE FA Statement Selection Portal")
+    def action_close_fa_selection(self, request, queryset):
+        for s in queryset:
+            s.fa_statement_selection_open = False
+            s.save()
+        messages.warning(request, "Failure Analysis Statement Selection portal has been CLOSED.")
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
             path('download/hackathon-teams-excel/', self.admin_site.admin_view(self.view_download_hackathon_teams_excel), name='nxtech_download_hackathon_teams_excel'),
             path('download/hackathon-teams-csv/', self.admin_site.admin_view(self.view_download_hackathon_teams_csv), name='nxtech_download_hackathon_teams_csv'),
+            path('download/fa-teams-statements-excel/', self.admin_site.admin_view(self.view_download_fa_teams_statements_excel), name='nxtech_download_fa_teams_statements_excel'),
+            path('download/fa-teams-statements-csv/', self.admin_site.admin_view(self.view_download_fa_teams_statements_csv), name='nxtech_download_fa_teams_statements_csv'),
             path('download/all-students-excel/', self.admin_site.admin_view(self.view_download_all_students_excel), name='nxtech_download_all_excel'),
             path('download/all-students-csv/', self.admin_site.admin_view(self.view_download_all_students_csv), name='nxtech_download_all_csv'),
             path('download/hackathon-excel/', self.admin_site.admin_view(self.view_download_hackathon_excel), name='nxtech_download_hackathon_excel'),
@@ -527,6 +701,44 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
             path('download/fa-csv/', self.admin_site.admin_view(self.view_download_fa_csv), name='nxtech_download_fa_csv'),
         ]
         return custom_urls + urls
+
+    def view_download_fa_teams_statements_excel(self, request):
+        queryset = FailureAnalysisTeam.objects.select_related('selected_statement').all().order_by('-created_at')
+        headers = ["S.No", "Team ID", "Team Name", "Leader Roll", "Leader Name", "Leader Dept", "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title", "Category", "Locked At", "Members Count", "Registered At"]
+        rows = [
+            [
+                idx, t.id, t.export_team_name, t.leader_roll, t.leader_name, t.leader_dept,
+                t.leader_contact or "", t.leader_email or "",
+                t.selected_statement.ps_id if t.selected_statement else "NOT SELECTED",
+                t.selected_statement.title if t.selected_statement else (t.selected_statement_title or "Pending Selection"),
+                t.selected_statement.get_category_display() if t.selected_statement else "-",
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "-",
+                t.members.count(),
+                t.created_at.strftime("%Y-%m-%d %H:%M")
+            ]
+            for idx, t in enumerate(queryset, start=1)
+        ]
+        filename = f"NxTech26_FA_Teams_With_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        return generate_excel_response(filename, "FA Teams Statements", headers, rows)
+
+    def view_download_fa_teams_statements_csv(self, request):
+        queryset = FailureAnalysisTeam.objects.select_related('selected_statement').all().order_by('-created_at')
+        headers = ["S.No", "Team ID", "Team Name", "Leader Roll", "Leader Name", "Leader Dept", "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title", "Category", "Locked At", "Members Count", "Registered At"]
+        rows = [
+            [
+                idx, t.id, t.export_team_name, t.leader_roll, t.leader_name, t.leader_dept,
+                t.leader_contact or "", t.leader_email or "",
+                t.selected_statement.ps_id if t.selected_statement else "NOT SELECTED",
+                t.selected_statement.title if t.selected_statement else (t.selected_statement_title or "Pending Selection"),
+                t.selected_statement.get_category_display() if t.selected_statement else "-",
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "-",
+                t.members.count(),
+                t.created_at.strftime("%Y-%m-%d %H:%M")
+            ]
+            for idx, t in enumerate(queryset, start=1)
+        ]
+        filename = f"NxTech26_FA_Teams_With_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
+        return generate_csv_response(filename, headers, rows)
 
     def view_download_hackathon_teams_excel(self, request):
         queryset = HackathonTeam.objects.all().order_by('-created_at')
@@ -570,8 +782,11 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
             ])
             counter += 1
 
-        fa_members = FailureAnalysisMember.objects.select_related('team').order_by('team__team_name', '-is_leader')
+        fa_members = FailureAnalysisMember.objects.select_related('team', 'team__selected_statement').order_by('team__team_name', '-is_leader')
         for m in fa_members:
+            s = m.team.selected_statement
+            ps_id = s.ps_id if s else "-"
+            ps_title = s.title if s else (m.team.selected_statement_title or m.team.topic or "Forensic Case Defense")
             rows.append([
                 counter,
                 "Failure Analysis",
@@ -580,8 +795,8 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
                 m.roll,
                 m.dept,
                 "Team Leader" if m.is_leader else "Member",
-                "-",
-                m.team.topic or "Forensic Case Defense",
+                ps_id,
+                ps_title,
                 m.team.leader_name,
                 m.team.leader_contact or "",
                 m.team.leader_email or "",
@@ -622,22 +837,34 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
         return generate_csv_response(filename, headers, rows)
 
     def view_download_fa_excel(self, request):
-        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
-        fa_members = FailureAnalysisMember.objects.select_related('team').order_by('team__team_name', '-is_leader')
-        rows = [
-            [idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
-            for idx, m in enumerate(fa_members, start=1)
-        ]
+        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Selected Statement ID", "Selected Statement Title", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
+        fa_members = FailureAnalysisMember.objects.select_related('team', 'team__selected_statement').order_by('team__team_name', '-is_leader')
+        rows = []
+        for idx, m in enumerate(fa_members, start=1):
+            s = m.team.selected_statement
+            ps_id = s.ps_id if s else "-"
+            ps_title = s.title if s else (m.team.selected_statement_title or m.team.topic or "Forensic Case Defense")
+            rows.append([
+                idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member",
+                ps_id, ps_title, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "",
+                m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""
+            ])
         filename = f"NxTech26_Failure_Analysis_Students_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
         return generate_excel_response(filename, "FA Students", headers, rows)
 
     def view_download_fa_csv(self, request):
-        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
-        fa_members = FailureAnalysisMember.objects.select_related('team').order_by('team__team_name', '-is_leader')
-        rows = [
-            [idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member", m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "", m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""]
-            for idx, m in enumerate(fa_members, start=1)
-        ]
+        headers = ["S.No", "Team Name", "Student Name", "Roll Number", "Department", "Role", "Selected Statement ID", "Selected Statement Title", "Team Leader", "Leader Contact", "Leader Email", "Registered At"]
+        fa_members = FailureAnalysisMember.objects.select_related('team', 'team__selected_statement').order_by('team__team_name', '-is_leader')
+        rows = []
+        for idx, m in enumerate(fa_members, start=1):
+            s = m.team.selected_statement
+            ps_id = s.ps_id if s else "-"
+            ps_title = s.title if s else (m.team.selected_statement_title or m.team.topic or "Forensic Case Defense")
+            rows.append([
+                idx, m.team.export_team_name, m.name, m.roll, m.dept, "Team Leader" if m.is_leader else "Member",
+                ps_id, ps_title, m.team.leader_name, m.team.leader_contact or "", m.team.leader_email or "",
+                m.created_at.strftime("%Y-%m-%d %H:%M") if m.created_at else ""
+            ])
         filename = f"NxTech26_Failure_Analysis_Students_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
         return generate_csv_response(filename, headers, rows)
 

@@ -403,10 +403,548 @@
                         <span>{{ fa_team_count }} / {{ settings.max_fa_teams }} Teams Registered (Max 120)</span>
                     </div>
                     {% endif %}
+
+                    <!-- SELECT STATEMENT & DOWNLOAD MATERIALS BUTTON -->
+                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #CBD5E1; display: flex; flex-direction: column; gap: 8px;">
+                        <a href="{% url 'select_failure_analysis_statement' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 16px; border-radius: 12px; background: #0F172A; color: #FFFFFF; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);">
+                            <span>🔬</span>
+                            <span>Select Statement & Download Materials</span>
+                            <span>→</span>
+                        </a>
+
+                        <!-- 3 Direct Download Links -->
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px;">
+                            <a href="{% url 'download_fa_problem_statements' %}" title="Doc 1: Circuit & Core Statements (PDF)" style="text-align: center; padding: 6px 4px; border-radius: 8px; background: #F1F5F9; color: #334155; font-size: 10px; font-weight: 700; text-decoration: none; border: 1px solid #E2E8F0; transition: background 0.15s;">
+                                📄 Doc 1
+                            </a>
+                            <a href="{% url 'download_fa_case_sources' %}" title="Doc 2: 15 Startup Case Sources (PDF)" style="text-align: center; padding: 6px 4px; border-radius: 8px; background: #F1F5F9; color: #334155; font-size: 10px; font-weight: 700; text-decoration: none; border: 1px solid #E2E8F0; transition: background 0.15s;">
+                                📊 Doc 2
+                            </a>
+                            <a href="{% url 'download_fa_research_papers' %}" title="Doc 3: Startups & Research Papers (PDF)" style="text-align: center; padding: 6px 4px; border-radius: 8px; background: #F1F5F9; color: #334155; font-size: 10px; font-weight: 700; text-decoration: none; border: 1px solid #E2E8F0; transition: background 0.15s;">
+                                📑 Doc 3
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
         </div>
+
+        <!-- ========================================== -->
+        <!-- OFFICIAL EVENT TIMELINE (IMAGE 1 & 2 DESIGN) -->
+        <!-- ========================================== -->
+        <section id="timeline" style="margin-top: 72px;">
+            <style>
+                .tl-container {
+                    background: radial-gradient(circle at 50% 15%, rgba(124, 26, 126, 0.22) 0%, rgba(15, 23, 42, 0) 70%), #0A0F1D;
+                    border: 1px solid #1E293B;
+                    border-radius: 28px;
+                    padding: 48px 24px;
+                    position: relative;
+                    overflow: hidden;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                }
+                .tl-container::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background-image: radial-gradient(#1E293B 1px, transparent 1px);
+                    background-size: 24px 24px;
+                    opacity: 0.65;
+                    pointer-events: none;
+                }
+                .tl-tab-btn {
+                    padding: 10px 22px;
+                    border-radius: 9999px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.25s ease;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    background: rgba(15, 23, 42, 0.85);
+                    color: #94A3B8;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .tl-tab-btn:hover {
+                    color: #FFFFFF;
+                    border-color: rgba(168, 85, 247, 0.5);
+                    background: rgba(30, 41, 59, 0.9);
+                }
+                .tl-tab-btn.active {
+                    background: linear-gradient(135deg, #7C1A7E 0%, #9333EA 100%);
+                    color: #FFFFFF;
+                    border-color: #C084FC;
+                    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+                }
+                .tl-spine-wrap {
+                    position: relative;
+                    padding: 24px 0;
+                }
+                .tl-spine-line {
+                    position: absolute;
+                    left: 50%;
+                    top: 20px;
+                    bottom: 20px;
+                    width: 4px;
+                    transform: translateX(-50%);
+                    background: linear-gradient(180deg, #A855F7 0%, #06B6D4 50%, #EC4899 100%);
+                    box-shadow: 0 0 16px rgba(168, 85, 247, 0.65);
+                    border-radius: 9999px;
+                    z-index: 1;
+                }
+                .tl-spine-line.hack {
+                    background: linear-gradient(180deg, #9333EA 0%, #C084FC 50%, #7C1A7E 100%);
+                    box-shadow: 0 0 16px rgba(147, 51, 234, 0.65);
+                }
+                .tl-spine-line.fa {
+                    background: linear-gradient(180deg, #06B6D4 0%, #8B5CF6 50%, #EC4899 100%);
+                    box-shadow: 0 0 16px rgba(6, 182, 212, 0.65);
+                }
+                .tl-row {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 28px;
+                    width: 100%;
+                    z-index: 2;
+                }
+                .tl-row-left {
+                    justify-content: flex-start;
+                }
+                .tl-row-right {
+                    justify-content: flex-end;
+                }
+                .tl-node-icon {
+                    position: absolute;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 50%;
+                    background: #0B1120;
+                    border: 2px solid #A855F7;
+                    box-shadow: 0 0 14px rgba(168, 85, 247, 0.6);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 16px;
+                    z-index: 3;
+                    transition: transform 0.2s ease;
+                }
+                .tl-node-icon.cyan {
+                    border-color: #06B6D4;
+                    box-shadow: 0 0 14px rgba(6, 182, 212, 0.6);
+                }
+                .tl-node-icon.pink {
+                    border-color: #EC4899;
+                    box-shadow: 0 0 14px rgba(236, 72, 153, 0.6);
+                }
+                .tl-row:hover .tl-node-icon {
+                    transform: translateX(-50%) scale(1.12);
+                }
+                .tl-box {
+                    width: calc(50% - 40px);
+                    background: rgba(15, 23, 42, 0.82);
+                    border: 1px solid rgba(148, 163, 184, 0.18);
+                    border-radius: 18px;
+                    padding: 18px 22px;
+                    backdrop-filter: blur(14px);
+                    transition: all 0.25s ease;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+                }
+                .tl-box:hover {
+                    transform: translateY(-2px);
+                    border-color: rgba(168, 85, 247, 0.45);
+                    box-shadow: 0 14px 30px rgba(168, 85, 247, 0.15);
+                }
+                .tl-box-highlight {
+                    background: linear-gradient(135deg, rgba(88, 28, 135, 0.65) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+                    border: 2px solid #C084FC !important;
+                    box-shadow: 0 0 25px rgba(192, 132, 252, 0.35) !important;
+                }
+                .tl-box-highlight-cyan {
+                    background: linear-gradient(135deg, rgba(14, 116, 144, 0.65) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+                    border: 2px solid #38BDF8 !important;
+                    box-shadow: 0 0 25px rgba(56, 189, 248, 0.35) !important;
+                }
+                .tl-time-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 3px 10px;
+                    border-radius: 9999px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    background: rgba(168, 85, 247, 0.16);
+                    border: 1px solid rgba(168, 85, 247, 0.35);
+                    color: #E9D5FF;
+                }
+                .tl-time-chip.cyan {
+                    background: rgba(6, 182, 212, 0.16);
+                    border-color: rgba(6, 182, 212, 0.35);
+                    color: #67E8F9;
+                }
+                .tl-time-chip.pink {
+                    background: rgba(236, 72, 153, 0.16);
+                    border-color: rgba(236, 72, 153, 0.35);
+                    color: #FBCFE8;
+                }
+                .tl-time-chip.amber {
+                    background: rgba(245, 158, 11, 0.16);
+                    border-color: rgba(245, 158, 11, 0.35);
+                    color: #FDE68A;
+                }
+                @media (max-width: 860px) {
+                    .tl-spine-line {
+                        left: 22px !important;
+                        transform: none !important;
+                    }
+                    .tl-node-icon {
+                        left: 22px !important;
+                        transform: translateX(-50%) !important;
+                        width: 36px !important;
+                        height: 36px !important;
+                        font-size: 14px !important;
+                    }
+                    .tl-row {
+                        justify-content: flex-start !important;
+                        margin-bottom: 20px !important;
+                    }
+                    .tl-row:hover .tl-node-icon {
+                        transform: translateX(-50%) scale(1.08) !important;
+                    }
+                    .tl-box {
+                        width: calc(100% - 50px) !important;
+                        margin-left: 50px !important;
+                        margin-right: 0 !important;
+                        padding: 16px 18px !important;
+                    }
+                }
+            </style>
+
+            <div class="tl-container">
+                <!-- Section Header -->
+                <div style="position: relative; z-index: 2; text-align: center; max-width: 720px; margin: 0 auto 36px;">
+                    <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 9999px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #D8B4FE; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;">
+                        <span>⚡</span>
+                        <span>Dr. Mahalingam College of Engineering & Technology</span>
+                    </div>
+
+                    <h2 class="nx-title" style="font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; color: #FFFFFF; margin-top: 14px; letter-spacing: -0.02em;">
+                        Official Event <span style="background: linear-gradient(135deg, #C084FC 0%, #38BDF8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Timeline</span>
+                    </h2>
+
+                    <p style="font-size: 15px; color: #94A3B8; margin-top: 8px; line-height: 1.6;">
+                        9:00 AM – 3:00 PM • Innovation Nexus 2K26 schedule for Hackathon & Failure Analysis arenas.
+                    </p>
+
+                    <!-- Interactive Track Switcher Tabs -->
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px;">
+                        <button type="button" class="tl-tab-btn active" onclick="switchTimelineTab('all', this)">
+                            <span>🌐</span>
+                            <span>All Tracks (Dual View)</span>
+                        </button>
+                        <button type="button" class="tl-tab-btn" onclick="switchTimelineTab('hackathon', this)">
+                            <span>💻</span>
+                            <span>Hackathon (9 AM – 3 PM)</span>
+                        </button>
+                        <button type="button" class="tl-tab-btn" onclick="switchTimelineTab('fa', this)">
+                            <span>🔬</span>
+                            <span>Failure Analysis (9 AM – 3 PM)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DUAL TRACK / SIDE-BY-SIDE OR TOGGLE VIEW -->
+                <div id="timelineContent" style="position: relative; z-index: 2;">
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 36px; max-width: 1200px; margin: 0 auto;">
+
+                        <!-- ================================ -->
+                        <!-- TRACK 1: HACKATHON TIMELINE      -->
+                        <!-- ================================ -->
+                        <div id="trackHackathon" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 22px; padding: 28px 20px;">
+                            
+                            <!-- Track Badge Header -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(168, 85, 247, 0.2);">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 20px;">💻</span>
+                                        <h3 class="nx-title" style="font-size: 18px; font-weight: 800; color: #FFFFFF;">HACKATHON</h3>
+                                    </div>
+                                    <p style="font-size: 12px; color: #C084FC; font-weight: 700; margin-top: 3px;">9:00 AM – 3:00 PM (6-Hour Live Sprint)</p>
+                                </div>
+                                <span style="padding: 4px 10px; background: rgba(147, 51, 234, 0.2); border: 1px solid rgba(147, 51, 234, 0.4); color: #E9D5FF; font-size: 11px; font-weight: 700; border-radius: 8px;">8 Milestones</span>
+                            </div>
+
+                            <p style="font-size: 12px; color: #94A3B8; margin-bottom: 24px; line-height: 1.5; background: rgba(2, 6, 23, 0.4); padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(168, 85, 247, 0.25);">
+                                ℹ️ Problem statements released online during registration on 30 October. PPT template provided on the event day. Evaluation starts at 1:00 PM.
+                            </p>
+
+                            <!-- Timeline Spine & Items -->
+                            <div class="tl-spine-wrap">
+                                <div class="tl-spine-line hack" style="left: 22px; transform: none;"></div>
+
+                                <!-- Milestone 1 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">👥</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 9:00 – 9:15 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Registration and Team Verification</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">First-year participant check-in, team identity verification and lab seat allocation.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 2 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">🤝</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 9:15 – 9:30 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Team Discussion & Finalisation</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Team discussion and finalisation of solution approach and development stack.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 3 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">📄</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 9:45 – 10:00 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">On-Spot PPT Template Distribution</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">On-spot official PPT template distribution, rubrics briefing and instructions.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 4 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">💡</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 10:00 – 11:00 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Problem Analysis & System Design</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Problem analysis, brainstorming and comprehensive modular system design.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 5 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">⚙️</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 11:00 AM – 12:30 PM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Solution Development & Implementation</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Core sprint: writing logic, wiring circuits/models, building live prototype.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 6 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">💻</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 12:30 – 1:00 PM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Testing, Debugging & PPT Preparation</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Testing, edge-case debugging, and finalizing pitch slides on official template.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 7 (HIGHLIGHTED PURPLE) -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon pink" style="left: 22px; transform: translateX(-50%);">🏆</div>
+                                    <div class="tl-box tl-box-highlight" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                            <div class="tl-time-chip pink" style="background: rgba(236, 72, 153, 0.25); border-color: #F472B6; color: #FDF2F8;">● 1:00 – 2:45 PM</div>
+                                            <span style="font-size: 10px; font-weight: 800; background: #EC4899; color: #FFFFFF; padding: 2px 7px; border-radius: 6px; text-transform: uppercase;">Key Stage</span>
+                                        </div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin-top: 6px;">Project Demonstration & Evaluation</h4>
+                                        <p style="font-size: 12px; color: #E9D5FF; margin-top: 3px;">Live jury evaluations, practical prototype demonstrations, and rigorous technical Q&A.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 8 -->
+                                <div class="tl-row" style="justify-content: flex-start; margin-bottom: 0;">
+                                    <div class="tl-node-icon" style="left: 22px; transform: translateX(-50%);">🏁</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip">● 2:45 – 3:00 PM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Final Evaluation & Closing</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Consolidation of juror scores, feedback distribution and closing ceremony.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- ================================ -->
+                        <!-- TRACK 2: FAILURE ANALYSIS        -->
+                        <!-- ================================ -->
+                        <div id="trackFA" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 22px; padding: 28px 20px;">
+                            
+                            <!-- Track Badge Header -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(6, 182, 212, 0.2);">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 20px;">🔬</span>
+                                        <h3 class="nx-title" style="font-size: 18px; font-weight: 800; color: #FFFFFF;">FAILURE ANALYSIS</h3>
+                                    </div>
+                                    <p style="font-size: 12px; color: #67E8F9; font-weight: 700; margin-top: 3px;">9:00 AM – 3:00 PM (Forensic Defense)</p>
+                                </div>
+                                <span style="padding: 4px 10px; background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); color: #A5F3FC; font-size: 11px; font-weight: 700; border-radius: 8px;">9 Milestones</span>
+                            </div>
+
+                            <p style="font-size: 12px; color: #94A3B8; margin-bottom: 24px; line-height: 1.5; background: rgba(2, 6, 23, 0.4); padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(6, 182, 212, 0.25);">
+                                ℹ️ Select a problem statement from the website at 9:30 AM and submit it. Research papers and PPT template provided on the spot. Evaluation starts at 12:00 PM.
+                            </p>
+
+                            <!-- Timeline Spine & Items -->
+                            <div class="tl-spine-wrap">
+                                <div class="tl-spine-line fa" style="left: 22px; transform: none;"></div>
+
+                                <!-- Milestone 1 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">👥</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 9:00 – 9:15 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Registration and Team Verification</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">First-year participant check-in, attendance and hall seating allocation.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 2 (HIGHLIGHTED ACTION: SELECT STATEMENT) -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%); border-color: #38BDF8; box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);">🖱️</div>
+                                    <div class="tl-box tl-box-highlight-cyan" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                            <div class="tl-time-chip cyan" style="background: rgba(6, 182, 212, 0.3); border-color: #38BDF8; color: #ECFEFF;">● 9:15 – 9:30 AM</div>
+                                            <span style="font-size: 10px; font-weight: 800; background: #0284C7; color: #FFFFFF; padding: 2px 7px; border-radius: 6px; text-transform: uppercase;">⚡ Website Portal Action</span>
+                                        </div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin-top: 6px;">Select Problem Statement from Website & Submit</h4>
+                                        <p style="font-size: 12px; color: #CFFAFE; margin-top: 3px;">
+                                            Online selection portal opens! Browse Circuit, Core, & Startup Failure statements, enter your team details, and lock your chosen challenge.
+                                        </p>
+                                        <div style="margin-top: 10px;">
+                                            <a href="{% url 'select_failure_analysis_statement' %}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 10px; background: #0284C7; color: #FFFFFF; font-size: 12px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); transition: transform 0.2s;">
+                                                <span>🔬 Choose Statement Now</span>
+                                                <span>→</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 3 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">📖</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 9:30 – 9:45 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Research Paper & On-Spot PPT Template</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Research paper and on-spot presentation template distribution with forensic evaluation rubrics.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 4 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">📑</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 10:00 – 10:30 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Research Paper Reading & Understanding</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">In-depth reading of case studies, failure logs, and technical defense literature.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 5 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">🔍</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 10:30 – 11:00 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Problem Identification & Failure Analysis</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Deconstructing critical breakdown moments, structural anomalies, and engineering flaws.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 6 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">🔀</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 11:00 – 11:30 AM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Root Cause Identification & Analysis</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Root cause identification and rigorous comparative analysis of existing approaches.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 7 -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">📋</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 11:30 AM – 12:00 PM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Developing Feasible Solution & PPT Finalisation</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Developing a feasible engineering remedy and finalizing defense presentation slides.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 8 (HIGHLIGHTED PURPLE) -->
+                                <div class="tl-row" style="justify-content: flex-start;">
+                                    <div class="tl-node-icon pink" style="left: 22px; transform: translateX(-50%);">🏆</div>
+                                    <div class="tl-box tl-box-highlight" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                            <div class="tl-time-chip pink" style="background: rgba(236, 72, 153, 0.25); border-color: #F472B6; color: #FDF2F8;">● 12:00 – 2:45 PM</div>
+                                            <span style="font-size: 10px; font-weight: 800; background: #EC4899; color: #FFFFFF; padding: 2px 7px; border-radius: 6px; text-transform: uppercase;">Key Stage</span>
+                                        </div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin-top: 6px;">Team Presentations, Judges' Questions & Evaluation</h4>
+                                        <p style="font-size: 12px; color: #E9D5FF; margin-top: 3px;">Team stage presentations, expert forensic cross-examination, and comprehensive scoring.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Milestone 9 -->
+                                <div class="tl-row" style="justify-content: flex-start; margin-bottom: 0;">
+                                    <div class="tl-node-icon cyan" style="left: 22px; transform: translateX(-50%);">🏁</div>
+                                    <div class="tl-box" style="width: calc(100% - 50px); margin-left: 50px;">
+                                        <div class="tl-time-chip cyan">● 2:45 – 3:00 PM</div>
+                                        <h4 class="nx-title" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-top: 6px;">Final Evaluation & Closing</h4>
+                                        <p style="font-size: 12px; color: #94A3B8; margin-top: 3px;">Compilation of results, debriefing and valedictory closing ceremony.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Poster Footer Note -->
+                    <div style="text-align: center; margin-top: 36px; padding-top: 24px; border-top: 1px solid rgba(148, 163, 184, 0.15);">
+                        <p style="font-size: 13px; font-weight: 700; color: #CBD5E1; letter-spacing: 0.05em; text-transform: uppercase;">
+                            NXT TECH 2K26 • STUDENT RESEARCH COUNCIL
+                        </p>
+                        <p style="font-size: 11px; color: #64748B; margin-top: 4px;">
+                            Dr. Mahalingam College of Engineering and Technology, Pollachi
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- JavaScript for switching tabs -->
+            <script>
+                function switchTimelineTab(tab, btn) {
+                    const hackTrack = document.getElementById('trackHackathon');
+                    const faTrack = document.getElementById('trackFA');
+                    const buttons = document.querySelectorAll('.tl-tab-btn');
+
+                    buttons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    if (tab === 'hackathon') {
+                        hackTrack.style.display = 'block';
+                        faTrack.style.display = 'none';
+                    } else if (tab === 'fa') {
+                        hackTrack.style.display = 'none';
+                        faTrack.style.display = 'block';
+                    } else {
+                        hackTrack.style.display = 'block';
+                        faTrack.style.display = 'block';
+                    }
+                }
+            </script>
+        </section>
 
         <!-- RULES & INSTRUCTIONS -->
         <section style="margin-top: 72px; padding-top: 48px; border-top: 1px solid #E2E8F0;">

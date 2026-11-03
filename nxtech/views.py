@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
+from django.utils import timezone
 
 from .models import (
     Department,
@@ -15,12 +16,18 @@ from .models import (
     HackathonMember,
     FailureAnalysisTeam,
     FailureAnalysisMember,
+    FailureAnalysisStatement,
     NxTechSettings,
 )
 from .problem_statements import (
     HACKATHON_PROBLEM_STATEMENTS,
     get_problem_statement_choices,
     generate_hackathon_pdf_bytes,
+)
+from .fa_data import (
+    generate_fa_statements_pdf_bytes,
+    generate_fa_sources_pdf_bytes,
+    generate_fa_papers_pdf_bytes,
 )
 
 TENTATIVE_PROBLEM_STATEMENTS = get_problem_statement_choices()
@@ -134,6 +141,7 @@ def nxtech_home(request):
 
     fa_capacity_reached = (fa_team_count >= settings.max_fa_teams)
     fa_open = settings.failure_analysis_registration_open and not fa_capacity_reached
+    fa_statements_count = FailureAnalysisStatement.objects.filter(is_active=True).count()
 
     context = {
         'user_registration': user_reg,
@@ -142,6 +150,7 @@ def nxtech_home(request):
         'hackathon_member_count': hackathon_member_count,
         'fa_team_count': fa_team_count,
         'fa_member_count': fa_member_count,
+        'fa_statements_count': fa_statements_count,
         'hackathon_capacity_reached': hackathon_capacity_reached,
         'fa_capacity_reached': fa_capacity_reached,
         'hackathon_open': hackathon_open,
@@ -641,4 +650,150 @@ def download_hackathon_problem_statements(request):
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="NxTech26_Hackathon_Problem_Statements.pdf"'
     return response
+
+
+def download_fa_problem_statements(request):
+    """
+    Doc 1: Downloads the official Failure Analysis Problem Statements & Research Paper Links
+    (Circuit/Electronics & Core/Auto-Mechanical).
+    """
+    pdf_bytes = generate_fa_statements_pdf_bytes()
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="NxTech26_Failure_Analysis_Problem_Statements.pdf"'
+    return response
+
+
+def download_fa_case_sources(request):
+    """
+    Doc 2: Downloads Research Sources for 15 Startup Failure Case Studies.
+    """
+    pdf_bytes = generate_fa_sources_pdf_bytes()
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="NxTech26_15_Startup_Case_Studies_Sources.pdf"'
+    return response
+
+
+def download_fa_research_papers(request):
+    """
+    Doc 3: Downloads Startups and Their Related Research Papers.
+    """
+    pdf_bytes = generate_fa_papers_pdf_bytes()
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="NxTech26_Startups_and_Related_Research_Papers.pdf"'
+    return response
+
+
+def select_failure_analysis_statement(request):
+    """
+    Failure Analysis Problem Statement Selection & Materials Hub.
+    Allows registered or competing teams to download the 3 official reference
+    documents and officially submit their chosen case study / problem statement.
+    """
+    settings = NxTechSettings.get_settings()
+    user_reg = get_user_nxtech_registration(request.user)
+
+    # Active statements grouped by track
+    active_statements = FailureAnalysisStatement.objects.filter(is_active=True).order_by('order', 'ps_id')
+    circuit_statements = active_statements.filter(category='CIRCUIT')
+    core_statements = active_statements.filter(category='CORE')
+    startup_statements = active_statements.filter(category='STARTUP')
+
+    prefill_team_name = ""
+    prefill_leader_name = ""
+    prefill_leader_roll = ""
+    existing_team = None
+
+    if user_reg and user_reg['type'] == 'Failure Analysis':
+        existing_team = user_reg['team']
+        prefill_team_name = existing_team.team_name
+        prefill_leader_name = existing_team.leader_name
+        prefill_leader_roll = existing_team.leader_roll
+
+    if request.method == 'POST':
+        if not settings.fa_statement_selection_open:
+            messages.error(
+                request,
+                settings.fa_statement_selection_closed_msg or "Statement selection for Failure Analysis is currently closed."
+            )
+            return redirect('select_failure_analysis_statement')
+
+        team_name = request.POST.get('team_name', '').strip()
+        leader_name = request.POST.get('leader_name', '').strip()
+        leader_roll = request.POST.get('leader_roll', '').strip().upper()
+        statement_id = request.POST.get('statement_id', '').strip()
+
+        if not team_name:
+            messages.error(request, "Team Name is required.")
+            return redirect('select_failure_analysis_statement')
+        if not statement_id:
+            messages.error(request, "Please select an official Problem Statement / Case Study.")
+            return redirect('select_failure_analysis_statement')
+
+        # Find statement object (supports either ps_id like 'FA01' or integer pk)
+        selected_stmt = FailureAnalysisStatement.objects.filter(ps_id=statement_id, is_active=True).first()
+        if not selected_stmt and str(statement_id).isdigit():
+            selected_stmt = FailureAnalysisStatement.objects.filter(id=int(statement_id), is_active=True).first()
+        if not selected_stmt:
+            messages.error(request, "Selected Problem Statement is invalid or has been archived.")
+            return redirect('select_failure_analysis_statement')
+
+        # Match team in database
+        target_team = None
+        if existing_team and existing_team.team_name.lower() == team_name.lower():
+            target_team = existing_team
+        else:
+            target_team = FailureAnalysisTeam.objects.filter(team_name__iexact=team_name).first()
+            if not target_team and leader_roll:
+                target_team = FailureAnalysisTeam.objects.filter(leader_roll__iexact=leader_roll).first()
+
+        statement_full_title = f"[{selected_stmt.ps_id}] {selected_stmt.title}"
+
+        if target_team:
+            target_team.selected_statement = selected_stmt
+            target_team.selected_statement_title = statement_full_title
+            target_team.topic = statement_full_title
+            target_team.statement_selected_at = timezone.now()
+            if leader_name and (not target_team.leader_name or target_team.leader_name == target_team.leader_roll):
+                target_team.leader_name = leader_name
+            target_team.save()
+
+            messages.success(
+                request,
+                f"🎉 Statement locked! Team '{target_team.team_name}' has successfully selected '{statement_full_title}'."
+            )
+            return redirect('nxtech_confirmation', event_type='failure-analysis', team_id=target_team.id)
+        else:
+            # If team registered with slight variation or directly on-spot
+            reg_user = request.user.username if request.user.is_authenticated else (leader_roll or team_name)
+            target_team = FailureAnalysisTeam.objects.create(
+                team_name=team_name,
+                leader_name=leader_name or "Team Leader",
+                leader_roll=leader_roll or "NXT-FA",
+                leader_dept="General",
+                topic=statement_full_title,
+                selected_statement=selected_stmt,
+                selected_statement_title=statement_full_title,
+                statement_selected_at=timezone.now(),
+                registered_by_user=reg_user
+            )
+            messages.success(
+                request,
+                f"🎉 Statement submitted! Team '{team_name}' has locked '{statement_full_title}'."
+            )
+            return redirect('nxtech_confirmation', event_type='failure-analysis', team_id=target_team.id)
+
+    context = {
+        'settings': settings,
+        'active_statements': active_statements,
+        'circuit_statements': circuit_statements,
+        'core_statements': core_statements,
+        'startup_statements': startup_statements,
+        'prefill_team_name': prefill_team_name,
+        'prefill_leader_name': prefill_leader_name,
+        'prefill_leader_roll': prefill_leader_roll,
+        'existing_team': existing_team,
+        'total_statements_count': active_statements.count(),
+    }
+    return render(request, "nxtech/select_fa_statement.html", context)
+
 

@@ -60,3 +60,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(update_departments, reverse_update_departments),
     ]
+

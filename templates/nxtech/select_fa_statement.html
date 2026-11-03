@@ -1,0 +1,372 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Failure Analysis Statements & Selection | NxTech'26 | SRC</title>
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8FAFC;
+            color: #0F172A;
+        }
+        .nx-title {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .nx-gradient-bg {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        }
+        .statement-card {
+            transition: all 0.2s ease;
+        }
+        .statement-card:hover {
+            transform: translateY(-2px);
+            border-color: #0F172A;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+        }
+        .statement-card.selected {
+            border-color: #0F172A;
+            background-color: #F8FAFC;
+            box-shadow: 0 0 0 2px #0F172A;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    {% include 'nav.html' %}
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full flex-1">
+        
+        <!-- Back Navigation -->
+        <div class="mb-6">
+            <a href="{% url 'nxtech_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-black transition">
+                <span>←</span> Back to NxTech'26 Arena
+            </a>
+        </div>
+
+        <!-- Header -->
+        <div class="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200 shadow-sm mb-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-80 h-80 bg-purple-100 rounded-full blur-3xl opacity-40 pointer-events-none -mr-20 -mt-20"></div>
+            
+            <div class="relative z-10">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-wider mb-3">
+                    <span>🔬 Forensic Engineering Track</span>
+                </div>
+                <h1 class="nx-title text-2xl sm:text-4xl font-black text-gray-900 tracking-tight">
+                    Failure Analysis Problem Statements & Materials
+                </h1>
+                <p class="text-gray-600 text-sm sm:text-base mt-2 max-w-3xl leading-relaxed">
+                    Download the official reference documents, explore curated forensic challenges across 
+                    <strong>Circuit / Electronics</strong>, <strong>Core / Auto-Mechanical</strong>, and <strong>15 Startup Failure Case Studies</strong>, 
+                    and officially lock your team's statement.
+                </p>
+
+                {% if existing_team and existing_team.selected_statement_title %}
+                <div class="mt-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm flex items-start sm:items-center gap-3">
+                    <span class="text-2xl shrink-0">✅</span>
+                    <div>
+                        <span class="font-bold">Current Locked Statement for Team '{{ existing_team.team_name }}':</span>
+                        <div class="font-mono text-emerald-800 font-semibold mt-0.5 text-xs sm:text-sm">
+                            {{ existing_team.selected_statement_title }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="mb-8">
+            {% for message in messages %}
+            <div class="p-4 mb-3 rounded-2xl {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-amber-50 border border-amber-200 text-amber-800{% endif %} flex items-center justify-between text-sm shadow-sm font-semibold">
+                <p>{{ message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ============================================================== -->
+        <!-- SECTION 1: THE THREE DOWNLOADABLE REFERENCE DOCUMENTS          -->
+        <!-- ============================================================== -->
+        <div class="mb-12">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="nx-title text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span>📥</span> Official Materials & Download Hub
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">3 curated reference PDFs compiled for NxTech 2K26 participants</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                
+                <!-- FILE 1: CIRCUIT & CORE PROBLEM STATEMENTS -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between hover:border-gray-300 transition">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg mb-4">
+                            📄
+                        </div>
+                        <span class="text-[11px] font-bold text-purple-700 uppercase tracking-wider bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                            Document 01
+                        </span>
+                        <h3 class="font-bold text-gray-900 text-base mt-2.5">
+                            Circuit & Core Problem Statements
+                        </h3>
+                        <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">
+                            Official 12 problem statements (FA01–FA12) covering IoT hardware, battery scale-up, EVs, and automotive engineering with citations.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-100">
+                        <a href="{% url 'download_fa_problem_statements' %}" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
+                            <span>📥</span> Download PDF (Doc 1)
+                        </a>
+                    </div>
+                </div>
+
+                <!-- FILE 2: 15 STARTUP CASE STUDIES RESEARCH SOURCES -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between hover:border-gray-300 transition">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg mb-4">
+                            📊
+                        </div>
+                        <span class="text-[11px] font-bold text-blue-700 uppercase tracking-wider bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                            Document 02
+                        </span>
+                        <h3 class="font-bold text-gray-900 text-base mt-2.5">
+                            15 Startup Cases & Research Sources
+                        </h3>
+                        <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">
+                            Comprehensive tables with 5 verified research sources, legal filings (SEBI/NCLT), and context for all 15 startup failure cases.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-100">
+                        <a href="{% url 'download_fa_case_sources' %}" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
+                            <span>📥</span> Download Sources PDF (Doc 2)
+                        </a>
+                    </div>
+                </div>
+
+                <!-- FILE 3: STARTUPS & RELATED RESEARCH PAPERS -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between hover:border-gray-300 transition">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg mb-4">
+                            📑
+                        </div>
+                        <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                            Document 03
+                        </span>
+                        <h3 class="font-bold text-gray-900 text-base mt-2.5">
+                            Startups & Related Research Papers
+                        </h3>
+                        <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">
+                            15 startup failure studies paired with academic research papers, authors, journal links, and classification (Basis vs. Closely Related).
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-100">
+                        <a href="{% url 'download_fa_research_papers' %}" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
+                            <span>📥</span> Download Papers PDF (Doc 3)
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- SECTION 2: STATEMENT SELECTION FORM                            -->
+        <!-- ============================================================== -->
+        <div class="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200 shadow-sm">
+            <div class="border-b border-gray-100 pb-5 mb-8">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="nx-title text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                            <span>🎯</span> Lock & Select My Statement
+                        </h2>
+                        <p class="text-xs sm:text-sm text-gray-500 mt-1">
+                            Choose your team's investigation challenge from the active database.
+                        </p>
+                    </div>
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        {{ total_statements_count }} Statements Available
+                    </span>
+                </div>
+            </div>
+
+            <form method="POST" id="fa-statement-form" class="space-y-8">
+                {% csrf_token %}
+
+                <!-- SQUAD VERIFICATION FIELDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label for="team_name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Team Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="team_name" name="team_name" required
+                            value="{{ prefill_team_name }}"
+                            placeholder="Exact Registered Team Name"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition bg-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Enter your team name exactly as submitted during registration.</p>
+                    </div>
+
+                    <div>
+                        <label for="leader_name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Team Leader Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="leader_name" name="leader_name" required
+                            value="{{ prefill_leader_name|default:request.user.full_name|default:'' }}"
+                            placeholder="Full Name of Team Leader"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition bg-white">
+                    </div>
+                </div>
+
+                <!-- CATEGORY FILTER PILLS & SEARCH -->
+                <div class="pt-4 border-t border-gray-100 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Choose Your Problem Statement / Case Study <span class="text-red-500">*</span>
+                        </label>
+
+                        <!-- Live Search Bar -->
+                        <div class="w-full sm:w-64">
+                            <input type="text" id="statement-search" placeholder="🔍 Search statements..." onkeyup="filterStatements()"
+                                class="w-full text-xs rounded-xl border border-gray-300 py-2 px-3 text-gray-800 focus:border-slate-800 focus:ring-2 focus:ring-slate-100 outline-none transition bg-white">
+                        </div>
+                    </div>
+
+                    <!-- Filter Tabs -->
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button type="button" onclick="setCategoryFilter('ALL')" id="tab-ALL" class="filter-tab px-3 py-1.5 rounded-lg font-bold bg-slate-900 text-white transition">
+                            All ({{ total_statements_count }})
+                        </button>
+                        <button type="button" onclick="setCategoryFilter('CIRCUIT')" id="tab-CIRCUIT" class="filter-tab px-3 py-1.5 rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                            Part A: Circuit / Electronics ({{ circuit_statements.count }})
+                        </button>
+                        <button type="button" onclick="setCategoryFilter('CORE')" id="tab-CORE" class="filter-tab px-3 py-1.5 rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                            Part B: Core / Auto-Mechanical ({{ core_statements.count }})
+                        </button>
+                        <button type="button" onclick="setCategoryFilter('STARTUP')" id="tab-STARTUP" class="filter-tab px-3 py-1.5 rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                            Startup Case Studies ({{ startup_statements.count }})
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STATEMENTS LIST (RADIO TILES) -->
+                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1" id="statements-container">
+                    {% for stmt in active_statements %}
+                    <label class="statement-card block p-4 rounded-2xl border border-gray-200 bg-white cursor-pointer relative"
+                        data-category="{{ stmt.category }}"
+                        data-search="{{ stmt.ps_id }} {{ stmt.title }} {{ stmt.problem_statement }}">
+                        <div class="flex items-start gap-3">
+                            <input type="radio" name="statement_id" value="{{ stmt.ps_id }}" required
+                                {% if existing_team and existing_team.selected_statement_id == stmt.id %}checked{% endif %}
+                                onchange="onStatementSelected(this)"
+                                class="mt-1 h-4 w-4 text-slate-900 border-gray-300 focus:ring-slate-800">
+                            
+                            <div class="flex-1">
+                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                    <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-900 text-white">
+                                        {{ stmt.ps_id }}
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded 
+                                        {% if stmt.category == 'CIRCUIT' %}bg-purple-100 text-purple-800
+                                        {% elif stmt.category == 'CORE' %}bg-amber-100 text-amber-800
+                                        {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                        {{ stmt.get_category_display }}
+                                    </span>
+                                </div>
+
+                                <h3 class="text-sm font-bold text-gray-900 mt-1">
+                                    {{ stmt.title }}
+                                </h3>
+                                
+                                <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">
+                                    {{ stmt.problem_statement }}
+                                </p>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <div class="pt-4 border-t border-gray-100">
+                    <button type="submit" class="w-full py-4 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-base sm:text-lg shadow-xl hover:shadow-2xl transition duration-200 flex items-center justify-center gap-2">
+                        <span>🚀</span>
+                        <span>Lock & Confirm My Statement Selection</span>
+                    </button>
+                    <p class="text-center text-xs text-gray-500 mt-2">
+                        Per NxTech rules, your selection will be recorded on the official roster for spot evaluation.
+                    </p>
+                </div>
+
+            </form>
+        </div>
+
+    </main>
+
+    <footer class="mt-auto py-8 bg-white border-t border-gray-200 text-center text-gray-500 text-sm">
+        <p>© 2026 Student Research Council (SRC) • Dr.Mahalingam College of Engineering & Technology</p>
+    </footer>
+
+    <script>
+        let currentFilter = 'ALL';
+
+        function setCategoryFilter(category) {
+            currentFilter = category;
+            
+            // Update Tab styles
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('bg-slate-900', 'text-white');
+                tab.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            const activeTab = document.getElementById('tab-' + category);
+            if (activeTab) {
+                activeTab.classList.remove('bg-gray-100', 'text-gray-700');
+                activeTab.classList.add('bg-slate-900', 'text-white');
+            }
+
+            filterStatements();
+        }
+
+        function filterStatements() {
+            const query = (document.getElementById('statement-search').value || '').toLowerCase().trim();
+            const cards = document.querySelectorAll('.statement-card');
+
+            cards.forEach(card => {
+                const category = card.getAttribute('data-category');
+                const searchText = (card.getAttribute('data-search') || '').toLowerCase();
+
+                const categoryMatches = (currentFilter === 'ALL' || category === currentFilter);
+                const queryMatches = (!query || searchText.includes(query));
+
+                if (categoryMatches && queryMatches) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function onStatementSelected(radio) {
+            document.querySelectorAll('.statement-card').forEach(c => c.classList.remove('selected'));
+            if (radio.checked) {
+                const card = radio.closest('.statement-card');
+                if (card) card.classList.add('selected');
+            }
+        }
+
+        // Initialize state on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkedRadio = document.querySelector('input[name="statement_id"]:checked');
+            if (checkedRadio) onStatementSelected(checkedRadio);
+        });
+    </script>
+
+</body>
+</html>

@@ -248,8 +248,121 @@ def run_tests():
     assert "CyberKnights" in master_csv
     print("  PASS: Master Settings panel instant download serves teams with Problem Statements.")
 
+    # TEST 12: Home Page Event Timeline & FA Hub Links
+    print("\n[TEST 12] Checking Event Timeline & Materials Links on Landing Page...")
+    resp = client.get('/')
+    assert resp.status_code == 200
+    home_html = resp.content.decode('utf-8')
+    assert "Official Event" in home_html
+    assert "Timeline" in home_html
+    assert "HACKATHON" in home_html
+    assert "FAILURE ANALYSIS" in home_html
+    assert "9:00 AM – 3:00 PM" in home_html
+    assert "Select Statement & Download Materials" in home_html
+    assert "download-statements" in home_html
+    assert "download-sources" in home_html
+    assert "download-papers" in home_html
+    print("  PASS: Event Timeline (Hackathon 9 AM-3 PM & FA 9 AM-3 PM) and materials links rendered successfully.")
+
+    # TEST 13: 3 Failure Analysis PDF Downloads
+    print("\n[TEST 13] Checking 3 Failure Analysis ReportLab PDF Downloads...")
+    # Doc 1: Problem statements
+    resp1 = client.get('/failure-analysis/download-statements/')
+    assert resp1.status_code == 200, f"Expected 200, got {resp1.status_code}"
+    assert resp1['Content-Type'] == 'application/pdf'
+    assert len(resp1.content) > 1500, "Doc 1 PDF too small"
+    print(f"  PASS: Doc 1 (Statements) PDF generated ({len(resp1.content)} bytes).")
+
+    # Doc 2: Startup sources
+    resp2 = client.get('/failure-analysis/download-sources/')
+    assert resp2.status_code == 200, f"Expected 200, got {resp2.status_code}"
+    assert resp2['Content-Type'] == 'application/pdf'
+    assert len(resp2.content) > 1500, "Doc 2 PDF too small"
+    print(f"  PASS: Doc 2 (Case Sources) PDF generated ({len(resp2.content)} bytes).")
+
+    # Doc 3: Startup research papers
+    resp3 = client.get('/failure-analysis/download-papers/')
+    assert resp3.status_code == 200, f"Expected 200, got {resp3.status_code}"
+    assert resp3['Content-Type'] == 'application/pdf'
+    assert len(resp3.content) > 1500, "Doc 3 PDF too small"
+    print(f"  PASS: Doc 3 (Research Papers) PDF generated ({len(resp3.content)} bytes).")
+
+    # TEST 14: Failure Analysis Statement Selection Flow
+    print("\n[TEST 14] Testing Statement Selection Portal & Team Locking...")
+    from nxtech.models import FailureAnalysisStatement
+    fa_stat = FailureAnalysisStatement.objects.filter(is_active=True).first()
+    assert fa_stat is not None, "At least one active statement should exist"
+
+    # Create a test FA team
+    fa_team = FailureAnalysisTeam.objects.create(
+        team_name="Forensic Squad X",
+        leader_name="Sanjay Raman",
+        leader_roll="727626BCS888",
+        leader_dept="CSE",
+        leader_contact="9876543219",
+        leader_email="sanjay@mcet.in",
+        registered_by_user="727626BCS888"
+    )
+    FailureAnalysisMember.objects.create(team=fa_team, name="Sanjay Raman", roll="727626BCS888", dept="CSE", is_leader=True)
+    FailureAnalysisMember.objects.create(team=fa_team, name="Member 2", roll="727626BCS889", dept="CSE")
+    FailureAnalysisMember.objects.create(team=fa_team, name="Member 3", roll="727626BCS890", dept="ECE")
+    FailureAnalysisMember.objects.create(team=fa_team, name="Member 4", roll="727626BCS891", dept="MECH")
+    FailureAnalysisMember.objects.create(team=fa_team, name="Member 5", roll="727626BCS892", dept="CIVIL")
+
+    # GET selection portal
+    resp_portal = client.get('/failure-analysis/select-statement/')
+    assert resp_portal.status_code == 200
+    portal_html = resp_portal.content.decode('utf-8')
+    assert "Failure Analysis" in portal_html
+    assert "Problem Statements & Materials" in portal_html
+    assert fa_stat.title in portal_html
+    print("  PASS: Statement Selection portal renders active statements and download cards.")
+
+    # POST selection to lock team's statement
+    select_payload = {
+        'team_name': 'Forensic Squad X',
+        'leader_name': 'Sanjay Raman',
+        'leader_roll': '727626BCS888',
+        'statement_id': fa_stat.ps_id,
+    }
+    resp_lock = client.post('/failure-analysis/select-statement/', select_payload, follow=True)
+    assert resp_lock.status_code == 200
+    fa_team.refresh_from_db()
+    assert fa_team.selected_statement_id == fa_stat.id, f"Expected {fa_stat.id}, got {fa_team.selected_statement_id}"
+    assert fa_team.statement_selected_at is not None, "Timestamp not set"
+    print(f"  PASS: Team successfully locked statement [{fa_stat.ps_id}] '{fa_stat.title}'.")
+
+    # TEST 15: Admin FA Statements & Visibility Toggle
+    print("\n[TEST 15] Checking Admin Statement Management & Visibility Toggle...")
+    # 1. Admin statements changelist
+    resp_adm_stat = client.get('/admin/nxtech/failureanalysisstatement/')
+    assert resp_adm_stat.status_code == 200
+    adm_stat_html = resp_adm_stat.content.decode('utf-8')
+    assert fa_stat.ps_id in adm_stat_html
+    print("  PASS: Admin FA Statement list renders with status badges and categories.")
+
+    # 2. Hide statement and verify portal excludes it
+    fa_stat.is_active = False
+    fa_stat.save()
+    resp_portal_hidden = client.get('/failure-analysis/select-statement/')
+    hidden_html = resp_portal_hidden.content.decode('utf-8')
+    # Hidden statement should not appear on student portal
+    assert f"[{fa_stat.ps_id}]" not in hidden_html
+    print(f"  PASS: Hidden statement [{fa_stat.ps_id}] correctly excluded from student portal.")
+
+    # Restore visibility
+    fa_stat.is_active = True
+    fa_stat.save()
+
+    # 3. Export FA teams with statements Excel
+    resp_fa_excel = client.get('/admin/nxtech/nxtechsettings/download/fa-teams-statements-excel/')
+    assert resp_fa_excel.status_code == 200
+    assert 'spreadsheetml' in resp_fa_excel['Content-Type']
+    assert len(resp_fa_excel.content) > 1000
+    print("  PASS: Admin FA Teams with Selected Statements Excel export generated successfully.")
+
     print("\n" + "=" * 70)
-    print(">> ALL 11 STANDALONE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
+    print(">> ALL 15 STANDALONE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
     print("=" * 70)
 
 if __name__ == '__main__':
