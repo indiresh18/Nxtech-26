@@ -1,17 +1,10 @@
 {
   "version": 2,
-  "functions": {
-    "config/wsgi.py": {
-      "excludeFiles": "{staticfiles,static,test_*,*.docx,*.md}/**"
-    }
-  },
   "builds": [
     {
       "src": "config/wsgi.py",
       "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.12"
-      }
+      "config": { "runtime": "python3.12" }
     },
     {
       "src": "build_files.sh",
