@@ -361,6 +361,13 @@ def run_tests():
     assert len(resp_fa_excel.content) > 1000
     print("  PASS: Admin FA Teams with Selected Statements Excel export generated successfully.")
 
+    # 4. Export FA teams directly from FailureAnalysisTeam top button
+    resp_fa_top_excel = client.get('/admin/nxtech/failureanalysisteam/download/all-fa-teams-excel/')
+    assert resp_fa_top_excel.status_code == 200
+    assert 'spreadsheetml' in resp_fa_top_excel['Content-Type']
+    assert len(resp_fa_top_excel.content) > 1000
+    print("  PASS: FailureAnalysisTeam changelist top button Excel export verified.")
+
     # TEST 16: PPT Template Downloads and PPT Submissions for Hackathon & Failure Analysis
     print("\n[TEST 16] Testing PPT Template Downloads & Submission Portals...")
     

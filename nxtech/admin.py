@@ -392,6 +392,7 @@ class FailureAnalysisStatementAdmin(admin.ModelAdmin):
 
 @admin.register(FailureAnalysisTeam)
 class FailureAnalysisTeamAdmin(admin.ModelAdmin):
+    change_list_template = "admin/nxtech/failureanalysisteam/change_list.html"
     list_display = (
         'display_team_name', 'leader_name', 'leader_roll', 'leader_dept',
         'selected_statement_badge', 'leader_contact', 'team_size', 'ppt_submission_status', 'created_at'
@@ -403,6 +404,70 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
     list_filter = ('selected_statement__category', 'leader_dept', 'created_at')
     inlines = [FailureAnalysisMemberInline]
     actions = ['export_teams_csv', 'export_teams_excel', 'export_teams_with_statements_excel']
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('download/all-fa-teams-excel/', self.admin_site.admin_view(self.view_download_all_fa_teams_excel), name='fa_all_teams_excel'),
+            path('download/all-fa-teams-csv/', self.admin_site.admin_view(self.view_download_all_fa_teams_csv), name='fa_all_teams_csv'),
+        ]
+        return custom_urls + urls
+
+    def view_download_all_fa_teams_excel(self, request):
+        queryset = FailureAnalysisTeam.objects.select_related('selected_statement').all().order_by('-created_at')
+        headers = [
+            "S.No", "Team ID", "Team Name", "Leader Roll", "Leader Name", "Leader Dept",
+            "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title",
+            "Statement Category", "Locked At", "PPT Status", "PPT Drive Link", "PPT Uploaded File", "PPT Submitted At", "Members Count", "Registered At"
+        ]
+        rows = []
+        for idx, t in enumerate(queryset, start=1):
+            s = t.selected_statement
+            ppt_status = "Submitted" if (t.ppt_link or t.ppt_file_bytes) else "Pending"
+            rows.append([
+                idx, t.id, t.export_team_name, t.leader_roll, t.leader_name, t.leader_dept,
+                t.leader_contact or "", t.leader_email or "",
+                s.ps_id if s else "NOT SELECTED",
+                s.title if s else (t.selected_statement_title or "Pending Selection"),
+                s.get_category_display() if s else "-",
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "-",
+                ppt_status,
+                t.ppt_link or "",
+                t.ppt_filename or ("Yes" if t.ppt_file_bytes else "No"),
+                t.ppt_submitted_at.strftime("%Y-%m-%d %H:%M") if t.ppt_submitted_at else "",
+                t.members.count(),
+                t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else ""
+            ])
+        filename = f"NxTech26_FA_Teams_With_Selected_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        return generate_excel_response(filename, "FA Selected Statements", headers, rows)
+
+    def view_download_all_fa_teams_csv(self, request):
+        queryset = FailureAnalysisTeam.objects.select_related('selected_statement').all().order_by('-created_at')
+        headers = [
+            "S.No", "Team ID", "Team Name", "Leader Roll", "Leader Name", "Leader Dept",
+            "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title",
+            "Statement Category", "Locked At", "PPT Status", "PPT Drive Link", "PPT Uploaded File", "PPT Submitted At", "Members Count", "Registered At"
+        ]
+        rows = []
+        for idx, t in enumerate(queryset, start=1):
+            s = t.selected_statement
+            ppt_status = "Submitted" if (t.ppt_link or t.ppt_file_bytes) else "Pending"
+            rows.append([
+                idx, t.id, t.export_team_name, t.leader_roll, t.leader_name, t.leader_dept,
+                t.leader_contact or "", t.leader_email or "",
+                s.ps_id if s else "NOT SELECTED",
+                s.title if s else (t.selected_statement_title or "Pending Selection"),
+                s.get_category_display() if s else "-",
+                t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "-",
+                ppt_status,
+                t.ppt_link or "",
+                t.ppt_filename or ("Yes" if t.ppt_file_bytes else "No"),
+                t.ppt_submitted_at.strftime("%Y-%m-%d %H:%M") if t.ppt_submitted_at else "",
+                t.members.count(),
+                t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else ""
+            ])
+        filename = f"NxTech26_FA_Teams_With_Selected_Statements_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
+        return generate_csv_response(filename, headers, rows)
 
     def ppt_submission_status(self, obj):
         parts = []
