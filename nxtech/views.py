@@ -708,6 +708,9 @@ def select_failure_analysis_statement(request):
         prefill_team_name = existing_team.team_name
         prefill_leader_name = existing_team.leader_name
         prefill_leader_roll = existing_team.leader_roll
+    elif request.user.is_authenticated:
+        prefill_leader_name = getattr(request.user, 'full_name', '') or request.user.username
+        prefill_leader_roll = request.user.username
 
     if request.method == 'POST':
         if not settings.fa_statement_selection_open:

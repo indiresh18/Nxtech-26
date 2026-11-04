@@ -202,7 +202,7 @@
                 {% csrf_token %}
 
                 <!-- SQUAD VERIFICATION FIELDS -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div>
                         <label for="team_name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                             Team Name <span class="text-red-500">*</span>
@@ -211,7 +211,7 @@
                             value="{{ prefill_team_name }}"
                             placeholder="Exact Registered Team Name"
                             class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition bg-white">
-                        <p class="text-[11px] text-gray-400 mt-1">Enter your team name exactly as submitted during registration.</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Enter your team name exactly as submitted.</p>
                     </div>
 
                     <div>
@@ -219,9 +219,19 @@
                             Team Leader Name <span class="text-red-500">*</span>
                         </label>
                         <input type="text" id="leader_name" name="leader_name" required
-                            value="{{ prefill_leader_name|default:request.user.full_name|default:'' }}"
+                            value="{{ prefill_leader_name }}"
                             placeholder="Full Name of Team Leader"
                             class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition bg-white">
+                    </div>
+
+                    <div>
+                        <label for="leader_roll" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Leader Roll Number <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="leader_roll" name="leader_roll" required
+                            value="{{ prefill_leader_roll }}"
+                            placeholder="e.g. 727626BCS001"
+                            class="w-full text-sm rounded-xl border border-gray-300 py-3 px-3.5 text-gray-900 shadow-sm focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition bg-white uppercase">
                     </div>
                 </div>
 
