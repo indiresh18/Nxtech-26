@@ -321,12 +321,30 @@
                     </div>
                     {% endif %}
 
-                    <!-- DOWNLOAD HACKATHON PROBLEM STATEMENTS -->
-                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #E9D5FF;">
-                        <a href="{% url 'download_hackathon_problem_statements' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 16px; border-radius: 12px; background: #FAF5FF; color: #7C1A7E; border: 1.5px solid #D8B4FE; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 1px 3px rgba(124, 26, 126, 0.08);">
+                    <!-- DOWNLOAD HACKATHON PROBLEM STATEMENTS & PPT SUBMISSION -->
+                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #E9D5FF; display: flex; flex-direction: column; gap: 8px;">
+                        <a href="{% url 'download_hackathon_problem_statements' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; border-radius: 12px; background: #FAF5FF; color: #7C1A7E; border: 1.5px solid #D8B4FE; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 1px 3px rgba(124, 26, 126, 0.08);">
                             <span>📥</span>
                             <span>Download Hackathon Statements (PDF)</span>
                         </a>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                            <a href="{% url 'download_hackathon_ppt_template' %}" title="Official Hackathon PPT Template (.pptx)" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border-radius: 10px; background: #FFFFFF; color: #7C1A7E; border: 1.5px solid #C084FC; font-weight: 700; font-size: 12px; text-decoration: none; transition: all 0.2s; text-align: center;">
+                                <span>📊</span>
+                                <span>Download PPT</span>
+                            </a>
+                            <a href="{% url 'submit_hackathon_ppt' %}" title="Upload or link your presentation" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border-radius: 10px; background: linear-gradient(135deg, #7C1A7E 0%, #4A154B 100%); color: #FFFFFF; font-weight: 700; font-size: 12px; text-decoration: none; transition: all 0.2s; text-align: center; box-shadow: 0 2px 8px rgba(124, 26, 126, 0.25);">
+                                <span>📤</span>
+                                <span>Upload PPT</span>
+                            </a>
+                        </div>
+
+                        {% if user_hackathon_team and user_hackathon_team.ppt_submitted_at %}
+                        <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 10px; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+                            <span style="color: #065F46; font-weight: 700;">✓ PPT Submitted</span>
+                            <a href="{% url 'submit_hackathon_ppt' %}" style="color: #059669; font-weight: 700; text-decoration: underline;">View / Update</a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -406,14 +424,14 @@
 
                     <!-- SELECT STATEMENT & DOWNLOAD MATERIALS BUTTON -->
                     <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #CBD5E1; display: flex; flex-direction: column; gap: 8px;">
-                        <a href="{% url 'select_failure_analysis_statement' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 16px; border-radius: 12px; background: #0F172A; color: #FFFFFF; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);">
+                        <a href="{% url 'select_failure_analysis_statement' %}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 14px; border-radius: 12px; background: #0F172A; color: #FFFFFF; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);">
                             <span>🔬</span>
                             <span>Select Statement & Download Materials</span>
                             <span>→</span>
                         </a>
 
                         <!-- 3 Direct Download Links -->
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 2px;">
                             <a href="{% url 'download_fa_problem_statements' %}" title="Doc 1: Circuit & Core Statements (PDF)" style="text-align: center; padding: 6px 4px; border-radius: 8px; background: #F1F5F9; color: #334155; font-size: 10px; font-weight: 700; text-decoration: none; border: 1px solid #E2E8F0; transition: background 0.15s;">
                                 📄 Doc 1
                             </a>
@@ -424,6 +442,25 @@
                                 📑 Doc 3
                             </a>
                         </div>
+
+                        <!-- FAILURE ANALYSIS PPT TEMPLATE & SUBMISSION -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 2px;">
+                            <a href="{% url 'download_fa_ppt_template' %}" title="Official Failure Analysis PPT Template (.pptx)" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border-radius: 10px; background: #FFFFFF; color: #0F172A; border: 1.5px solid #CBD5E1; font-weight: 700; font-size: 12px; text-decoration: none; transition: all 0.2s; text-align: center;">
+                                <span>📊</span>
+                                <span>Download PPT</span>
+                            </a>
+                            <a href="{% url 'submit_failure_analysis_ppt' %}" title="Upload or link your presentation" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border-radius: 10px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; font-weight: 700; font-size: 12px; text-decoration: none; transition: all 0.2s; text-align: center; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);">
+                                <span>📤</span>
+                                <span>Upload PPT</span>
+                            </a>
+                        </div>
+
+                        {% if user_fa_team and user_fa_team.ppt_submitted_at %}
+                        <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 10px; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+                            <span style="color: #065F46; font-weight: 700;">✓ PPT Submitted</span>
+                            <a href="{% url 'submit_failure_analysis_ppt' %}" style="color: #059669; font-weight: 700; text-decoration: underline;">View / Update</a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

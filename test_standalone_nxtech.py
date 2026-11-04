@@ -361,8 +361,76 @@ def run_tests():
     assert len(resp_fa_excel.content) > 1000
     print("  PASS: Admin FA Teams with Selected Statements Excel export generated successfully.")
 
+    # TEST 16: PPT Template Downloads and PPT Submissions for Hackathon & Failure Analysis
+    print("\n[TEST 16] Testing PPT Template Downloads & Submission Portals...")
+    
+    # 1. Download Hackathon PPT template
+    resp_hack_ppt = client.get('/hackathon/download-ppt-template/')
+    assert resp_hack_ppt.status_code == 200, f"Expected 200, got {resp_hack_ppt.status_code}"
+    assert 'presentationml' in resp_hack_ppt['Content-Type']
+    assert len(resp_hack_ppt.content) > 50000, "Hackathon PPT template size too small"
+    print(f"  PASS: Hackathon PPT Template downloaded ({len(resp_hack_ppt.content)} bytes).")
+
+    # 2. Download Failure Analysis PPT template
+    resp_fa_ppt = client.get('/failure-analysis/download-ppt-template/')
+    assert resp_fa_ppt.status_code == 200, f"Expected 200, got {resp_fa_ppt.status_code}"
+    assert 'presentationml' in resp_fa_ppt['Content-Type']
+    assert len(resp_fa_ppt.content) > 50000, "FA PPT template size too small"
+    print(f"  PASS: Failure Analysis PPT Template downloaded ({len(resp_fa_ppt.content)} bytes).")
+
+    # 3. Submit Hackathon Presentation via Link
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    hack_team = HackathonTeam.objects.first()
+    hack_submit_data = {
+        'team_name': hack_team.team_name,
+        'leader_roll': hack_team.leader_roll,
+        'leader_name': hack_team.leader_name,
+        'ppt_link': 'https://docs.google.com/presentation/d/123456789/edit?usp=sharing',
+        'ppt_notes': 'Demo prototype hosted on Vercel: https://hack-demo.vercel.app'
+    }
+    resp_hack_sub = client.post('/hackathon/submit-ppt/', hack_submit_data, follow=True)
+    assert resp_hack_sub.status_code == 200
+    hack_team.refresh_from_db()
+    assert hack_team.ppt_link == 'https://docs.google.com/presentation/d/123456789/edit?usp=sharing'
+    assert hack_team.ppt_submitted_at is not None
+    print(f"  PASS: Hackathon Team '{hack_team.team_name}' successfully submitted PPT Link.")
+
+    # 4. Submit Failure Analysis Presentation via Direct File Upload
+    fa_team = FailureAnalysisTeam.objects.first()
+    fake_ppt = SimpleUploadedFile("case_study_investigation.pptx", b"PK\x03\x04test_ppt_binary_payload", content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+    fa_submit_data = {
+        'team_name': fa_team.team_name,
+        'leader_roll': fa_team.leader_roll,
+        'leader_name': fa_team.leader_name,
+        'ppt_file': fake_ppt,
+        'ppt_notes': 'Used 5-Whys and Fishbone diagram to isolate micro-switch firmware lockup'
+    }
+    resp_fa_sub = client.post('/failure-analysis/submit-ppt/', fa_submit_data, follow=True)
+    assert resp_fa_sub.status_code == 200
+    fa_team.refresh_from_db()
+    assert fa_team.ppt_filename == 'case_study_investigation.pptx'
+    assert fa_team.ppt_file_bytes == b"PK\x03\x04test_ppt_binary_payload"
+    assert fa_team.ppt_submitted_at is not None
+    print(f"  PASS: Failure Analysis Team '{fa_team.team_name}' successfully uploaded PPT file.")
+
+    # 5. Download submitted file endpoint
+    resp_down_file = client.get(f'/failure-analysis/download-submission/{fa_team.id}/')
+    assert resp_down_file.status_code == 200
+    assert resp_down_file.content == b"PK\x03\x04test_ppt_binary_payload"
+    print("  PASS: Submission file download endpoint verified.")
+
+    # 6. Admin team changelist displays submission status
+    resp_admin_hack = client.get('/admin/nxtech/hackathonteam/')
+    assert resp_admin_hack.status_code == 200
+    assert "🔗 Link" in resp_admin_hack.content.decode('utf-8')
+
+    resp_admin_fa = client.get('/admin/nxtech/failureanalysisteam/')
+    assert resp_admin_fa.status_code == 200
+    assert "📥 File" in resp_admin_fa.content.decode('utf-8')
+    print("  PASS: Admin changelists display interactive presentation links and file download buttons.")
+
     print("\n" + "=" * 70)
-    print(">> ALL 15 STANDALONE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
+    print(">> ALL 16 STANDALONE TESTS PASSED SUCCESSFULLY! 100% VERIFIED.")
     print("=" * 70)
 
 if __name__ == '__main__':

@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Presentation PPT • NxTech'26 Failure Analysis</title>
+    <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0A0F1D;
+            color: #F8FAFC;
+        }
+        .nx-title {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .glow-slate {
+            box-shadow: 0 0 50px -10px rgba(148, 163, 184, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased bg-[#0A0F1D]">
+
+    {% include 'nav.html' %}
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full flex-1">
+        
+        <!-- Back Navigation -->
+        <div class="mb-6 flex items-center justify-between">
+            <a href="{% url 'nxtech_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white transition">
+                <span>←</span> Back to NxTech'26 Arena
+            </a>
+            <a href="{% url 'select_failure_analysis_statement' %}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white transition">
+                <span>🔬 View Statement Hub</span>
+            </a>
+        </div>
+
+        <!-- Header Card -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 sm:p-10 border border-slate-700 glow-slate mb-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-80 h-80 bg-slate-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+            
+            <div class="relative z-10">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold uppercase tracking-wider mb-3">
+                    <span>🔬 Track 02 • Forensic Investigation</span>
+                </div>
+                <h1 class="nx-title text-2xl sm:text-4xl font-black text-white tracking-tight">
+                    Upload & Submit Failure Analysis Presentation
+                </h1>
+                <p class="text-slate-300 text-sm sm:text-base mt-2 max-w-2xl leading-relaxed">
+                    Submit your team's official 11-slide presentation for the jury case defense. Provide a <strong>Google Drive / Slides link</strong> or upload your <strong>.pptx / .pdf</strong> file directly.
+                </p>
+
+                <!-- Template Download Quick Banner -->
+                <div class="mt-6 pt-5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-lg">
+                            📊
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-white">Need the Official 11-Slide Forensic Template?</div>
+                            <div class="text-xs text-slate-400">Startup Overview, Business Model, Growth, Challenges, Failure Cause, Redesign</div>
+                        </div>
+                    </div>
+                    <a href="{% url 'download_fa_ppt_template' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shadow-lg shadow-amber-900/50">
+                        <span>📥</span> Download FA PPT Template (.pptx)
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="mb-8">
+            {% for message in messages %}
+            <div class="p-4 mb-3 rounded-2xl {% if message.tags == 'error' %}bg-red-950/80 border border-red-800 text-red-200{% elif message.tags == 'success' %}bg-emerald-950/80 border border-emerald-800 text-emerald-200{% else %}bg-amber-950/80 border border-amber-800 text-amber-200{% endif %} flex items-center justify-between text-sm shadow-sm font-semibold">
+                <p>{{ message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Existing Submission Status (if already submitted) -->
+        {% if existing_team and existing_team.ppt_submitted_at %}
+        <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 mb-8 relative overflow-hidden">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                    ✓
+                </div>
+                <div class="flex-1">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="text-lg font-bold text-white">
+                            Presentation Successfully Submitted for Team: <span class="text-emerald-400">{{ existing_team.team_name }}</span>
+                        </h3>
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {{ existing_team.ppt_submitted_at|date:"M d, Y h:i A" }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">
+                        Your forensic case study presentation is on record for the jury defense. You can update your submission below at any time.
+                    </p>
+
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        {% if existing_team.ppt_link %}
+                        <a href="{{ existing_team.ppt_link }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-bold transition">
+                            <span>🔗</span> Open Drive / Slides Link
+                        </a>
+                        {% endif %}
+                        {% if existing_team.ppt_file_bytes %}
+                        <a href="{% url 'download_fa_submission_file' existing_team.id %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-bold transition">
+                            <span>📥</span> Download Uploaded File ({{ existing_team.ppt_filename|default:"presentation.pptx" }})
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submission Form -->
+        <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
+            <div class="border-b border-slate-800 pb-5 mb-8">
+                <h2 class="nx-title text-xl font-bold text-white flex items-center gap-2">
+                    <span>📤</span> Forensic Presentation Submission Form
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">
+                    Please provide either a Google Drive / Slides link (recommended) OR upload your presentation file.
+                </p>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- Team & Leader Identifiers -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                            Team Name <span class="text-amber-400">*</span>
+                        </label>
+                        <input type="text" name="team_name" required value="{{ prefill_team_name }}" placeholder="e.g. Forensic Explorers"
+                               class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                            Team Leader Roll Number <span class="text-amber-400">*</span>
+                        </label>
+                        <input type="text" name="leader_roll" required value="{{ prefill_leader_roll }}" placeholder="e.g. 727624BCS001"
+                               class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm uppercase">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                            Team Leader Name
+                        </label>
+                        <input type="text" name="leader_name" value="{{ prefill_leader_name }}" placeholder="Full Name"
+                               class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                            Selected Statement / Case Study
+                        </label>
+                        <input type="text" readonly value="{% if existing_team and existing_team.selected_statement_title %}{{ existing_team.selected_statement_title }}{% elif existing_team %}{{ existing_team.topic }}{% else %}Failure Analysis Track{% endif %}"
+                               class="w-full px-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-400 text-sm cursor-not-allowed">
+                    </div>
+                </div>
+
+                <!-- SUBMISSION OPTION 1: GOOGLE DRIVE / SLIDES LINK -->
+                <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800/80">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-base">🔗</span>
+                        <label class="block text-xs font-bold text-amber-300 uppercase tracking-wider">
+                            Option 1: Google Drive / Google Slides / Canva Link (Recommended)
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">
+                        Ensure link access is set to <strong>"Anyone with the link can view"</strong> so the jury can review during presentations.
+                    </p>
+                    <input type="url" name="ppt_link" value="{{ existing_team.ppt_link|default:'' }}"
+                           placeholder="https://docs.google.com/presentation/d/... or https://drive.google.com/file/..."
+                           class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm">
+                </div>
+
+                <!-- OR DIVIDER -->
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-800"></div>
+                    <span class="flex-shrink mx-4 text-xs font-bold text-slate-500 uppercase">OR Upload File Directly</span>
+                    <div class="flex-grow border-t border-slate-800"></div>
+                </div>
+
+                <!-- SUBMISSION OPTION 2: DIRECT FILE UPLOAD -->
+                <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800/80">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-base">📁</span>
+                        <label class="block text-xs font-bold text-amber-300 uppercase tracking-wider">
+                            Option 2: Direct File Upload (.pptx / .ppt / .pdf / .zip)
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">
+                        Max file size: <strong>15 MB</strong>. For larger presentations with embedded video/media, please use Option 1 (Google Drive link).
+                    </p>
+                    <input type="file" name="ppt_file" accept=".pptx,.ppt,.pdf,.zip"
+                           class="block w-full text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-500 cursor-pointer">
+                    
+                    {% if existing_team and existing_team.ppt_filename %}
+                    <div class="mt-3 text-xs text-emerald-400">
+                        Current file on record: <strong>{{ existing_team.ppt_filename }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- NOTES / REMARKS -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                        Forensic Methodology Notes / Remarks for Jury (Optional)
+                    </label>
+                    <textarea name="ppt_notes" rows="3" placeholder="Provide notes on your root cause analysis tools (e.g. 5-Whys, Ishikawa diagram, Fault Tree Analysis), corrective action redesigns, or citations..."
+                              class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-sm">{{ existing_team.ppt_notes|default:'' }}</textarea>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg shadow-amber-900/40 flex items-center justify-center gap-2">
+                        <span>📤</span>
+                        <span>Submit Presentation for Case Defense</span>
+                        <span>→</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+    </main>
+
+    <footer class="mt-auto py-8 text-center text-xs text-slate-500 border-t border-slate-900">
+        <p>© 2026 Dr. Mahalingam College of Engineering and Technology (MCET) • NxTech 2K26</p>
+    </footer>
+
+</body>
+</html>

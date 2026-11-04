@@ -1,3 +1,4 @@
+import os
 import re
 import json
 from django.shortcuts import render, redirect, get_object_or_404
@@ -6,8 +7,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.utils import timezone
+from django.conf import settings
 
 from .models import (
     Department,
@@ -145,6 +147,8 @@ def nxtech_home(request):
 
     context = {
         'user_registration': user_reg,
+        'user_hackathon_team': user_reg['team'] if user_reg and user_reg['type'] == 'Hackathon' else None,
+        'user_fa_team': user_reg['team'] if user_reg and user_reg['type'] == 'Failure Analysis' else None,
         'settings': settings,
         'hackathon_team_count': hackathon_team_count,
         'hackathon_member_count': hackathon_member_count,
@@ -798,5 +802,319 @@ def select_failure_analysis_statement(request):
         'total_statements_count': active_statements.count(),
     }
     return render(request, "nxtech/select_fa_statement.html", context)
+
+
+def download_hackathon_ppt_template(request):
+    """
+    Downloads the official NxTech'26 Hackathon Presentation PPT Template (.pptx).
+    """
+    template_path = os.path.join(settings.BASE_DIR, 'static', 'templates', 'NxTech26_Hackathon_Template.pptx')
+    if not os.path.exists(template_path):
+        fallback = r'C:\Users\indhi\.gemini\antigravity\brain\dd8e7f7d-3563-41e7-904d-2cd76d4d23ba\.user_uploaded\media_1793762494752_c7ab3d78.pptx'
+        if os.path.exists(fallback):
+            template_path = fallback
+
+    if os.path.exists(template_path):
+        with open(template_path, 'rb') as f:
+            data = f.read()
+        response = HttpResponse(
+            data,
+            content_type='application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        )
+        response['Content-Disposition'] = 'attachment; filename="NxTech26_Hackathon_Template.pptx"'
+        return response
+    raise Http404("Hackathon presentation template file not found.")
+
+
+def download_fa_ppt_template(request):
+    """
+    Downloads the official NxTech'26 Failure Analysis Presentation PPT Template (.pptx).
+    """
+    template_path = os.path.join(settings.BASE_DIR, 'static', 'templates', 'NxTech26_Failure_Analysis_Template.pptx')
+    if not os.path.exists(template_path):
+        fallback = r'C:\Users\indhi\.gemini\antigravity\brain\dd8e7f7d-3563-41e7-904d-2cd76d4d23ba\.user_uploaded\media_1793762494655_dfa708fe.pptx'
+        if os.path.exists(fallback):
+            template_path = fallback
+
+    if os.path.exists(template_path):
+        with open(template_path, 'rb') as f:
+            data = f.read()
+        response = HttpResponse(
+            data,
+            content_type='application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        )
+        response['Content-Disposition'] = 'attachment; filename="NxTech26_Failure_Analysis_Template.pptx"'
+        return response
+    raise Http404("Failure Analysis presentation template file not found.")
+
+
+def submit_hackathon_ppt(request):
+    """
+    Hackathon Presentation Submission Portal.
+    Allows teams to submit their presentation PPT / PPTX / PDF file or Google Drive/Slides URL.
+    """
+    settings_obj = NxTechSettings.get_settings()
+    user_reg = get_user_nxtech_registration(request.user)
+
+    existing_team = None
+    prefill_team_name = ""
+    prefill_leader_roll = ""
+    prefill_leader_name = ""
+
+    if user_reg and user_reg['type'] == 'Hackathon':
+        existing_team = user_reg['team']
+        prefill_team_name = existing_team.team_name
+        prefill_leader_roll = existing_team.leader_roll
+        prefill_leader_name = existing_team.leader_name
+    elif request.user.is_authenticated:
+        prefill_leader_roll = request.user.username
+        prefill_leader_name = getattr(request.user, 'full_name', '') or request.user.username
+
+    if request.method == 'POST':
+        if not settings_obj.hackathon_ppt_submission_open:
+            messages.error(
+                request,
+                settings_obj.ppt_submission_closed_msg or "Hackathon presentation submission is currently closed."
+            )
+            return redirect('submit_hackathon_ppt')
+
+        team_name = request.POST.get('team_name', '').strip()
+        leader_roll = request.POST.get('leader_roll', '').strip().upper()
+        leader_name = request.POST.get('leader_name', '').strip()
+        ppt_link = request.POST.get('ppt_link', '').strip()
+        ppt_notes = request.POST.get('ppt_notes', '').strip()
+        ppt_file = request.FILES.get('ppt_file')
+
+        if not team_name:
+            messages.error(request, "Team Name is required.")
+            return redirect('submit_hackathon_ppt')
+
+        if not ppt_link and not ppt_file:
+            messages.error(request, "Please provide either a Google Drive/Slides link OR upload your presentation file.")
+            return redirect('submit_hackathon_ppt')
+
+        file_bytes = None
+        file_name = None
+        if ppt_file:
+            if ppt_file.size > 15 * 1024 * 1024:
+                messages.error(request, "Uploaded file exceeds 15 MB limit. Please provide a Google Drive/Slides link instead.")
+                return redirect('submit_hackathon_ppt')
+            ext = os.path.splitext(ppt_file.name)[1].lower()
+            if ext not in ['.pptx', '.ppt', '.pdf', '.zip']:
+                messages.error(request, "Only .pptx, .ppt, .pdf, or .zip files are allowed.")
+                return redirect('submit_hackathon_ppt')
+            file_bytes = ppt_file.read()
+            file_name = ppt_file.name
+
+        # Lookup team
+        target_team = None
+        if existing_team and existing_team.team_name.lower() == team_name.lower():
+            target_team = existing_team
+        else:
+            target_team = HackathonTeam.objects.filter(team_name__iexact=team_name).first()
+            if not target_team and leader_roll:
+                target_team = HackathonTeam.objects.filter(leader_roll__iexact=leader_roll).first()
+
+        if target_team:
+            if ppt_link:
+                target_team.ppt_link = ppt_link
+            if file_bytes:
+                target_team.ppt_file_bytes = file_bytes
+                target_team.ppt_filename = file_name
+            if ppt_notes:
+                target_team.ppt_notes = ppt_notes
+            if leader_name and (not target_team.leader_name or target_team.leader_name == target_team.leader_roll):
+                target_team.leader_name = leader_name
+            target_team.ppt_submitted_at = timezone.now()
+            target_team.save()
+            messages.success(
+                request,
+                f"🎉 Hackathon Presentation submitted successfully for Team '{target_team.team_name}'!"
+            )
+            return redirect('submit_hackathon_ppt')
+        else:
+            # Create a submission entry so no team's work is ever rejected
+            reg_user = request.user.username if request.user.is_authenticated else (leader_roll or team_name)
+            target_team = HackathonTeam.objects.create(
+                team_name=team_name,
+                leader_name=leader_name or "Team Leader",
+                leader_roll=leader_roll or "NXT-HACK",
+                leader_dept="General",
+                problem_statement="Hackathon Track Presentation",
+                ppt_link=ppt_link,
+                ppt_filename=file_name,
+                ppt_file_bytes=file_bytes,
+                ppt_notes=ppt_notes,
+                ppt_submitted_at=timezone.now(),
+                registered_by_user=reg_user
+            )
+            messages.success(
+                request,
+                f"🎉 Hackathon Presentation submitted successfully for Team '{target_team.team_name}'!"
+            )
+            return redirect('submit_hackathon_ppt')
+
+    context = {
+        'settings': settings_obj,
+        'existing_team': existing_team,
+        'prefill_team_name': prefill_team_name,
+        'prefill_leader_roll': prefill_leader_roll,
+        'prefill_leader_name': prefill_leader_name,
+    }
+    return render(request, "nxtech/submit_hackathon_ppt.html", context)
+
+
+def submit_failure_analysis_ppt(request):
+    """
+    Failure Analysis Presentation Submission Portal.
+    Allows teams to submit their presentation PPT / PPTX / PDF file or Google Drive/Slides URL.
+    """
+    settings_obj = NxTechSettings.get_settings()
+    user_reg = get_user_nxtech_registration(request.user)
+
+    existing_team = None
+    prefill_team_name = ""
+    prefill_leader_roll = ""
+    prefill_leader_name = ""
+
+    if user_reg and user_reg['type'] == 'Failure Analysis':
+        existing_team = user_reg['team']
+        prefill_team_name = existing_team.team_name
+        prefill_leader_roll = existing_team.leader_roll
+        prefill_leader_name = existing_team.leader_name
+    elif request.user.is_authenticated:
+        prefill_leader_roll = request.user.username
+        prefill_leader_name = getattr(request.user, 'full_name', '') or request.user.username
+
+    if request.method == 'POST':
+        if not settings_obj.fa_ppt_submission_open:
+            messages.error(
+                request,
+                settings_obj.ppt_submission_closed_msg or "Failure Analysis presentation submission is currently closed."
+            )
+            return redirect('submit_failure_analysis_ppt')
+
+        team_name = request.POST.get('team_name', '').strip()
+        leader_roll = request.POST.get('leader_roll', '').strip().upper()
+        leader_name = request.POST.get('leader_name', '').strip()
+        ppt_link = request.POST.get('ppt_link', '').strip()
+        ppt_notes = request.POST.get('ppt_notes', '').strip()
+        ppt_file = request.FILES.get('ppt_file')
+
+        if not team_name:
+            messages.error(request, "Team Name is required.")
+            return redirect('submit_failure_analysis_ppt')
+
+        if not ppt_link and not ppt_file:
+            messages.error(request, "Please provide either a Google Drive/Slides link OR upload your presentation file.")
+            return redirect('submit_failure_analysis_ppt')
+
+        file_bytes = None
+        file_name = None
+        if ppt_file:
+            if ppt_file.size > 15 * 1024 * 1024:
+                messages.error(request, "Uploaded file exceeds 15 MB limit. Please provide a Google Drive/Slides link instead.")
+                return redirect('submit_failure_analysis_ppt')
+            ext = os.path.splitext(ppt_file.name)[1].lower()
+            if ext not in ['.pptx', '.ppt', '.pdf', '.zip']:
+                messages.error(request, "Only .pptx, .ppt, .pdf, or .zip files are allowed.")
+                return redirect('submit_failure_analysis_ppt')
+            file_bytes = ppt_file.read()
+            file_name = ppt_file.name
+
+        # Lookup team
+        target_team = None
+        if existing_team and existing_team.team_name.lower() == team_name.lower():
+            target_team = existing_team
+        else:
+            target_team = FailureAnalysisTeam.objects.filter(team_name__iexact=team_name).first()
+            if not target_team and leader_roll:
+                target_team = FailureAnalysisTeam.objects.filter(leader_roll__iexact=leader_roll).first()
+
+        if target_team:
+            if ppt_link:
+                target_team.ppt_link = ppt_link
+            if file_bytes:
+                target_team.ppt_file_bytes = file_bytes
+                target_team.ppt_filename = file_name
+            if ppt_notes:
+                target_team.ppt_notes = ppt_notes
+            if leader_name and (not target_team.leader_name or target_team.leader_name == target_team.leader_roll):
+                target_team.leader_name = leader_name
+            target_team.ppt_submitted_at = timezone.now()
+            target_team.save()
+            messages.success(
+                request,
+                f"🎉 Failure Analysis Presentation submitted successfully for Team '{target_team.team_name}'!"
+            )
+            return redirect('submit_failure_analysis_ppt')
+        else:
+            reg_user = request.user.username if request.user.is_authenticated else (leader_roll or team_name)
+            target_team = FailureAnalysisTeam.objects.create(
+                team_name=team_name,
+                leader_name=leader_name or "Team Leader",
+                leader_roll=leader_roll or "NXT-FA",
+                leader_dept="General",
+                topic="Failure Analysis Presentation",
+                ppt_link=ppt_link,
+                ppt_filename=file_name,
+                ppt_file_bytes=file_bytes,
+                ppt_notes=ppt_notes,
+                ppt_submitted_at=timezone.now(),
+                registered_by_user=reg_user
+            )
+            messages.success(
+                request,
+                f"🎉 Failure Analysis Presentation submitted successfully for Team '{target_team.team_name}'!"
+            )
+            return redirect('submit_failure_analysis_ppt')
+
+    context = {
+        'settings': settings_obj,
+        'existing_team': existing_team,
+        'prefill_team_name': prefill_team_name,
+        'prefill_leader_roll': prefill_leader_roll,
+        'prefill_leader_name': prefill_leader_name,
+    }
+    return render(request, "nxtech/submit_fa_ppt.html", context)
+
+
+def download_hackathon_submission_file(request, team_id):
+    """
+    Downloads the presentation file submitted by a Hackathon team.
+    """
+    team = get_object_or_404(HackathonTeam, id=team_id)
+    if not team.ppt_file_bytes:
+        raise Http404("No uploaded file found for this team. Check if a cloud presentation link was provided.")
+    filename = team.ppt_filename or f"{team.team_name}_hackathon_presentation.pptx"
+    ext = os.path.splitext(filename)[1].lower()
+    ct = 'application/octet-stream'
+    if ext == '.pdf':
+        ct = 'application/pdf'
+    elif ext in ['.pptx', '.ppt']:
+        ct = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    response = HttpResponse(team.ppt_file_bytes, content_type=ct)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def download_fa_submission_file(request, team_id):
+    """
+    Downloads the presentation file submitted by a Failure Analysis team.
+    """
+    team = get_object_or_404(FailureAnalysisTeam, id=team_id)
+    if not team.ppt_file_bytes:
+        raise Http404("No uploaded file found for this team. Check if a cloud presentation link was provided.")
+    filename = team.ppt_filename or f"{team.team_name}_fa_presentation.pptx"
+    ext = os.path.splitext(filename)[1].lower()
+    ct = 'application/octet-stream'
+    if ext == '.pdf':
+        ct = 'application/pdf'
+    elif ext in ['.pptx', '.ppt']:
+        ct = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    response = HttpResponse(team.ppt_file_bytes, content_type=ct)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
 
 

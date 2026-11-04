@@ -34,6 +34,11 @@ class HackathonTeam(models.Model):
     problem_statement = models.CharField(max_length=150)
     problem_statement_detail = models.TextField(blank=True, null=True)
     registered_by_user = models.CharField(max_length=150, help_text="Roll number / username who submitted")
+    ppt_link = models.URLField(max_length=500, blank=True, null=True, verbose_name="PPT Drive/Slides Link")
+    ppt_filename = models.CharField(max_length=255, blank=True, null=True, verbose_name="Submitted File Name")
+    ppt_file_bytes = models.BinaryField(blank=True, null=True, verbose_name="Uploaded File Data")
+    ppt_submitted_at = models.DateTimeField(blank=True, null=True, verbose_name="PPT Submitted At")
+    ppt_notes = models.TextField(blank=True, null=True, verbose_name="Submission Notes / Comments")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -115,6 +120,11 @@ class FailureAnalysisTeam(models.Model):
     selected_statement_title = models.CharField(max_length=255, blank=True)
     statement_selected_at = models.DateTimeField(null=True, blank=True)
     registered_by_user = models.CharField(max_length=150, help_text="Roll number / username who submitted")
+    ppt_link = models.URLField(max_length=500, blank=True, null=True, verbose_name="PPT Drive/Slides Link")
+    ppt_filename = models.CharField(max_length=255, blank=True, null=True, verbose_name="Submitted File Name")
+    ppt_file_bytes = models.BinaryField(blank=True, null=True, verbose_name="Uploaded File Data")
+    ppt_submitted_at = models.DateTimeField(blank=True, null=True, verbose_name="PPT Submitted At")
+    ppt_notes = models.TextField(blank=True, null=True, verbose_name="Submission Notes / Comments")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -192,6 +202,20 @@ class NxTechSettings(models.Model):
         default="Problem statement selection for Failure Analysis will open at 8:30 AM / 9:15 AM on the event day.",
         blank=True,
         verbose_name="FA Selection Closed Notice"
+    )
+    hackathon_ppt_submission_open = models.BooleanField(
+        default=True,
+        verbose_name="Hackathon PPT Submission Open"
+    )
+    fa_ppt_submission_open = models.BooleanField(
+        default=True,
+        verbose_name="Failure Analysis PPT Submission Open"
+    )
+    ppt_submission_closed_msg = models.CharField(
+        max_length=255,
+        default="Presentation submission is currently closed by the organizers.",
+        blank=True,
+        verbose_name="PPT Submission Closed Notice"
     )
 
     class Meta:

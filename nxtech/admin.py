@@ -8,7 +8,7 @@ from openpyxl.utils import get_column_letter
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.http import HttpResponse
-from django.urls import path
+from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils import timezone
 from django.contrib import messages
@@ -139,6 +139,10 @@ def build_hackathon_teams_export(queryset):
         "Leader Email",
         "Members Count",
         "Team Members Roster",
+        "PPT Status",
+        "PPT Drive Link",
+        "PPT File Uploaded",
+        "PPT Submitted At",
         "Registered At"
     ]
     rows = []
@@ -149,6 +153,7 @@ def build_hackathon_teams_export(queryset):
             f"{m.name} ({m.roll} - {m.dept})" + (" [Lead]" if m.is_leader else "")
             for m in t.members.all()
         ])
+        ppt_status = "Submitted" if (t.ppt_link or t.ppt_file_bytes) else "Pending"
         rows.append([
             idx,
             t.id,
@@ -163,6 +168,10 @@ def build_hackathon_teams_export(queryset):
             t.leader_email or "",
             t.members.count(),
             members_list,
+            ppt_status,
+            t.ppt_link or "",
+            t.ppt_filename or ("Yes" if t.ppt_file_bytes else "No"),
+            t.ppt_submitted_at.strftime("%Y-%m-%d %H:%M") if t.ppt_submitted_at else "",
             t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else ""
         ])
     return headers, rows
@@ -181,12 +190,32 @@ class HackathonTeamAdmin(admin.ModelAdmin):
     change_list_template = "admin/nxtech/hackathonteam/change_list.html"
     list_display = (
         'display_team_name', 'display_problem_statement', 'leader_name', 'leader_roll',
-        'leader_dept', 'leader_contact', 'team_size', 'created_at'
+        'leader_dept', 'leader_contact', 'team_size', 'ppt_submission_status', 'created_at'
     )
     search_fields = ('team_name', 'leader_name', 'leader_roll', 'leader_dept', 'problem_statement')
     list_filter = (ProblemStatementFilter, 'leader_dept', 'created_at')
     inlines = [HackathonMemberInline]
     actions = ['export_teams_csv', 'export_teams_excel']
+
+    def ppt_submission_status(self, obj):
+        parts = []
+        if obj.ppt_link:
+            parts.append(f'<a href="{obj.ppt_link}" target="_blank" style="padding: 2px 7px; background: #E0E7FF; color: #3730A3; border-radius: 5px; font-weight: 700; font-size: 11px; text-decoration: none;">🔗 Link</a>')
+        if obj.ppt_file_bytes:
+            download_url = reverse('download_hackathon_submission_file', args=[obj.id])
+            parts.append(f'<a href="{download_url}" style="padding: 2px 7px; background: #ECFDF5; color: #065F46; border-radius: 5px; font-weight: 700; font-size: 11px; text-decoration: none;">📥 File</a>')
+        if parts:
+            time_str = obj.ppt_submitted_at.strftime('%d-%b %H:%M') if obj.ppt_submitted_at else 'Submitted'
+            return format_html(
+                '<div style="display: flex; flex-direction: column; gap: 3px;">'
+                '<span style="font-size: 10px; color: #059669; font-weight: 800;">✓ {}</span>'
+                '<div style="display: flex; gap: 4px;">{}</div>'
+                '</div>',
+                time_str,
+                format_html(" ".join(parts))
+            )
+        return format_html('<span style="color: #94A3B8; font-size: 11px; font-weight: 600;">⏳ Pending</span>')
+    ppt_submission_status.short_description = "PPT Submission"
 
     def display_team_name(self, obj):
         return format_html(
@@ -365,7 +394,7 @@ class FailureAnalysisStatementAdmin(admin.ModelAdmin):
 class FailureAnalysisTeamAdmin(admin.ModelAdmin):
     list_display = (
         'display_team_name', 'leader_name', 'leader_roll', 'leader_dept',
-        'selected_statement_badge', 'leader_contact', 'team_size', 'created_at'
+        'selected_statement_badge', 'leader_contact', 'team_size', 'ppt_submission_status', 'created_at'
     )
     search_fields = (
         'team_name', 'leader_name', 'leader_roll', 'leader_dept',
@@ -374,6 +403,26 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
     list_filter = ('selected_statement__category', 'leader_dept', 'created_at')
     inlines = [FailureAnalysisMemberInline]
     actions = ['export_teams_csv', 'export_teams_excel', 'export_teams_with_statements_excel']
+
+    def ppt_submission_status(self, obj):
+        parts = []
+        if obj.ppt_link:
+            parts.append(f'<a href="{obj.ppt_link}" target="_blank" style="padding: 2px 7px; background: #E0E7FF; color: #3730A3; border-radius: 5px; font-weight: 700; font-size: 11px; text-decoration: none;">🔗 Link</a>')
+        if obj.ppt_file_bytes:
+            download_url = reverse('download_fa_submission_file', args=[obj.id])
+            parts.append(f'<a href="{download_url}" style="padding: 2px 7px; background: #ECFDF5; color: #065F46; border-radius: 5px; font-weight: 700; font-size: 11px; text-decoration: none;">📥 File</a>')
+        if parts:
+            time_str = obj.ppt_submitted_at.strftime('%d-%b %H:%M') if obj.ppt_submitted_at else 'Submitted'
+            return format_html(
+                '<div style="display: flex; flex-direction: column; gap: 3px;">'
+                '<span style="font-size: 10px; color: #059669; font-weight: 800;">✓ {}</span>'
+                '<div style="display: flex; gap: 4px;">{}</div>'
+                '</div>',
+                time_str,
+                format_html(" ".join(parts))
+            )
+        return format_html('<span style="color: #94A3B8; font-size: 11px; font-weight: 600;">⏳ Pending</span>')
+    ppt_submission_status.short_description = "PPT Submission"
 
     def display_team_name(self, obj):
         return format_html(
@@ -409,12 +458,12 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
         return format_html(f"<strong>{count}</strong> members")
     team_size.short_description = "Squad Size"
 
-    @admin.action(description="⬇ Export Selected Teams to CSV (Includes Statement)")
+    @admin.action(description="⬇ Export Selected Teams to CSV (Includes Statement & PPT)")
     def export_teams_csv(self, request, queryset):
         headers = [
             "Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept",
             "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title",
-            "Selection Time", "Members Count", "Registered At"
+            "Selection Time", "PPT Status", "PPT Drive Link", "PPT Uploaded File", "PPT Submitted At", "Members Count", "Registered At"
         ]
         rows = [
             [
@@ -423,18 +472,22 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
                 t.selected_statement.ps_id if t.selected_statement else "",
                 t.selected_statement_title or (t.selected_statement.title if t.selected_statement else "NOT SELECTED"),
                 t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "",
+                "Submitted" if (t.ppt_link or t.ppt_file_bytes) else "Pending",
+                t.ppt_link or "",
+                t.ppt_filename or ("Yes" if t.ppt_file_bytes else "No"),
+                t.ppt_submitted_at.strftime("%Y-%m-%d %H:%M") if t.ppt_submitted_at else "",
                 t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")
             ]
             for t in queryset
         ]
         return generate_csv_response(f"nxtech_fa_teams_{timezone.now().strftime('%Y%m%d_%H%M')}.csv", headers, rows)
 
-    @admin.action(description="⬇ Export Selected Teams to Excel (.xlsx) (Includes Statement)")
+    @admin.action(description="⬇ Export Selected Teams to Excel (.xlsx) (Includes Statement & PPT)")
     def export_teams_excel(self, request, queryset):
         headers = [
             "Team ID", "Team Name", "Leader Name", "Leader Roll", "Leader Dept",
             "Leader Contact", "Leader Email", "Selected Statement ID", "Selected Statement Title",
-            "Selection Time", "Members Count", "Registered At"
+            "Selection Time", "PPT Status", "PPT Drive Link", "PPT Uploaded File", "PPT Submitted At", "Members Count", "Registered At"
         ]
         rows = [
             [
@@ -443,6 +496,10 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
                 t.selected_statement.ps_id if t.selected_statement else "",
                 t.selected_statement_title or (t.selected_statement.title if t.selected_statement else "NOT SELECTED"),
                 t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "",
+                "Submitted" if (t.ppt_link or t.ppt_file_bytes) else "Pending",
+                t.ppt_link or "",
+                t.ppt_filename or ("Yes" if t.ppt_file_bytes else "No"),
+                t.ppt_submitted_at.strftime("%Y-%m-%d %H:%M") if t.ppt_submitted_at else "",
                 t.members.count(), t.created_at.strftime("%Y-%m-%d %H:%M")
             ]
             for t in queryset
@@ -454,11 +511,12 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
         headers = [
             "S.No", "Team Name", "Leader Roll", "Leader Name", "Leader Dept",
             "Leader Contact", "Statement ID", "Statement Title", "Statement Category",
-            "Locked At", "Members Count"
+            "Locked At", "PPT Status", "PPT Drive Link", "Members Count"
         ]
         rows = []
         for idx, t in enumerate(queryset, start=1):
             s = t.selected_statement
+            ppt_status = "Submitted" if (t.ppt_link or t.ppt_file_bytes) else "Pending"
             rows.append([
                 idx, t.export_team_name, t.leader_roll, t.leader_name, t.leader_dept,
                 t.leader_contact or "",
@@ -466,6 +524,8 @@ class FailureAnalysisTeamAdmin(admin.ModelAdmin):
                 s.title if s else (t.selected_statement_title or "Not Selected Yet"),
                 s.get_category_display() if s else "-",
                 t.statement_selected_at.strftime("%Y-%m-%d %H:%M") if t.statement_selected_at else "-",
+                ppt_status,
+                t.ppt_link or (t.ppt_filename if t.ppt_file_bytes else ""),
                 t.members.count()
             ])
         return generate_excel_response(f"nxtech_fa_team_statements_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx", "FA Statements Roster", headers, rows)
@@ -545,6 +605,14 @@ class NxTechSettingsAdmin(admin.ModelAdmin):
                 "fa_statement_selection_closed_msg"
             ),
             "description": "Control whether Failure Analysis teams can select and lock their problem statement on the website."
+        }),
+        ("Presentation PPT Submissions (Hackathon & Failure Analysis)", {
+            "fields": (
+                "hackathon_ppt_submission_open",
+                "fa_ppt_submission_open",
+                "ppt_submission_closed_msg"
+            ),
+            "description": "Control whether teams can upload or provide links for their official PPT presentations."
         }),
     )
     actions = [
