@@ -261,7 +261,7 @@ def run_tests():
     assert "Select Statement & Download Materials" in home_html
     assert "download-statements" in home_html
     assert "download-sources" in home_html
-    assert "download-papers" in home_html
+    assert "download-papers" not in home_html, "Doc 3 should be removed from landing page"
     print("  PASS: Event Timeline (Hackathon 9 AM-3 PM & FA 9 AM-3 PM) and materials links rendered successfully.")
 
     # TEST 13: 3 Failure Analysis PDF Downloads
