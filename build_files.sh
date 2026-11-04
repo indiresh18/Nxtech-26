@@ -37,17 +37,14 @@ mkdir -p staticfiles
 echo ">> Collecting static files..."
 "$VENV_PYTHON" manage.py collectstatic --noinput --clear
 
-# Mirror static assets so both /static/ and root route resolutions succeed
-mkdir -p staticfiles/static
-cp -r static/* staticfiles/static/ 2>/dev/null || true
-cp -r staticfiles/admin staticfiles/static/ 2>/dev/null || true
-
 if [ -n "$DATABASE_URL" ]; then
     echo "=== Running Database Migrations on Supabase ==="
     "$VENV_PYTHON" manage.py migrate --noinput
 fi
 
-# Clean up temporary build virtual environment so it doesn't inflate the Lambda package
+# Clean up temporary build virtual environment & package caches
 rm -rf .venv
+rm -rf ~/.cache/uv 2>/dev/null || true
+rm -rf ~/.cache/pip 2>/dev/null || true
 
 echo "=== Build Complete ==="
